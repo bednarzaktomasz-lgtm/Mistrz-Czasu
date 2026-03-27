@@ -64,26 +64,17 @@ body.page-loaded {
   height: var(--icon-size);
   cursor: pointer;
   color: #555;
-  transition: color 0.2s, transform 0.18s;
+  transition: color 0.2s;
   -webkit-tap-highlight-color: transparent;
   flex-shrink: 0;
 }
-/* hover works when cursor is anywhere over the parent <a> or <button> */
-.icon-btn:hover,
-a:hover .icon-btn,
-button:hover .icon-btn {
-  color: #f0f0f0;
-  transform: scale(1.15);
-}
+.icon-btn:hover { color: #f0f0f0; }
 
 .settings-icon {
-  transition: color 0.2s, transform 0.18s;
+  transition: color 0.2s;
 }
-.settings-icon:hover,
-a:hover .settings-icon,
-button:hover .settings-icon {
+.settings-icon:hover {
   color: #f0f0f0;
-  transform: scale(1.15);
 }
 
 /* ---------- Help / ? button ---------- */
