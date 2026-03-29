@@ -38,16 +38,28 @@
       gap: clamp(12px, 2.5vmin, 32px);
       width: calc(var(--nav-width) * 0.8);
     }
-    /* placeholder so topbar icons align symmetrically */
-    .topbar-spacer {
+    /* Zmień gracza — lewa strona topbara */
+    .profile-nav-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
       width: var(--icon-size);
+      height: var(--icon-size);
+      text-decoration: none;
+      border-radius: 50%;
+      transition: background 0.2s;
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
     }
+    .profile-nav-btn:hover { background: #1a1a1a; }
   </style>
 </head>
 <body>
 
   <div class="topbar">
-    <div class="topbar-spacer"></div>
+    <a href="profil.html" class="profile-nav-btn" id="profileNavBtn" title="Zmień gracza">
+      <span id="profileAvatar" style="font-size: clamp(1.4rem, 3vmin, 2.4rem); line-height:1;">👤</span>
+    </a>
     <div class="topbar-right">
       <button class="help-btn" id="helpBtn">?</button>
       <a href="ustawienia.html" class="icon-btn settings-icon" title="Ustawienia">
@@ -84,7 +96,18 @@
     </a>
   </div>
 
+  <script src="game-state.js"></script>
   <script>
+    // ===== PROFILE CHECK =====
+    migrateFromLegacy();
+    const _activeProfile = getActiveProfile();
+    if (!_activeProfile) {
+      location.replace('profil.html');
+    } else {
+      const _av = AVATARS[_activeProfile.avatar] || AVATARS['boy-1'];
+      document.getElementById('profileAvatar').textContent = _av.emoji;
+    }
+
     const handColor = localStorage.getItem('zegar_handColor') || 'white';
     const colorMap = { white: '#f0f0f0', blue: '#2563eb', red: '#d82928' };
     document.documentElement.style.setProperty('--accent-color', colorMap[handColor] || '#f0f0f0');

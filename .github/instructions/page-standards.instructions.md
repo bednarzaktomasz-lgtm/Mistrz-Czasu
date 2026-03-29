@@ -312,7 +312,333 @@ Nie dodawaj nowych keyframe animations bez uzasadnienia. Czas transycji: `0.2s` 
 
 ---
 
-## 12. Responsywność — checklist przed oddaniem strony
+## 12. Okna dialogowe — NIGDY nie używaj `confirm()` / `alert()` / `prompt()`
+
+Natywne okna przeglądarki mają inny wygląd niż aplikacja i blokują wątek JS. Zamiast nich używaj wzorca poniżej opartego na istniejącej klasie `.modal` z `layout.css`.
+
+### HTML — dodać raz na stronę (przed `</body>`, przed skryptami):
+
+```html
+<!-- Confirm dialog modal -->
+<div class="modal" id="confirmModal" aria-modal="true" role="dialog">
+  <div class="modal-content" style="max-width: 380px; gap: clamp(16px, 2.5vmin, 28px);">
+    <p class="confirm-msg" id="confirmMsg"></p>
+    <div class="confirm-actions">
+      <button class="confirm-btn confirm-cancel" id="confirmCancel">Anuluj</button>
+      <button class="confirm-btn confirm-ok" id="confirmOk">Potwierdź</button>
+    </div>
+  </div>
+</div>
+```
+
+### CSS — dodać do lokalnego `<style>` strony:
+
+```css
+.confirm-msg {
+  font-size: clamp(1rem, 2.2vmin, 1.5rem);
+  color: #f0f0f0;
+  text-align: center;
+  margin: 0;
+  line-height: 1.4;
+}
+.confirm-actions {
+  display: flex;
+  gap: clamp(10px, 1.5vmin, 16px);
+  justify-content: center;
+}
+.confirm-btn {
+  background: #111;
+  border: 2px solid #222;
+  border-radius: var(--btn-radius);
+  color: #f0f0f0;
+  font-size: clamp(0.9rem, 2vmin, 1.3rem);
+  font-weight: 600;
+  padding: clamp(10px, 1.8vmin, 18px) clamp(20px, 3vmin, 36px);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.confirm-btn:hover            { background: #1a1a1a; border-color: #444; }
+.confirm-btn.confirm-ok       { background: #dc2626; border-color: #dc2626; color: #fff; }
+.confirm-btn.confirm-ok:hover { background: #b91c1c; border-color: #b91c1c; }
+```
+
+**Warianty przycisku OK:** dla destruktywnej akcji (usuń) — czerwony jak wyżej. Dla potwierdzenia pozytywnego (zapisz, wyślij) — zmień na `#2563eb` / `#1d4ed8` hover.
+
+### JS — gotowa funkcja (wkleić do `<script>` strony):
+
+```javascript
+function showConfirm(message, okLabel = 'Potwierdź', cancelLabel = 'Anuluj') {
+  return new Promise(resolve => {
+    const modal     = document.getElementById('confirmModal');
+    const msgEl     = document.getElementById('confirmMsg');
+    const okBtn     = document.getElementById('confirmOk');
+    const cancelBtn = document.getElementById('confirmCancel');
+    msgEl.textContent     = message;
+    okBtn.textContent     = okLabel;
+    cancelBtn.textContent = cancelLabel;
+    modal.classList.add('active');
+    function cleanup(result) {
+      modal.classList.remove('active');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      modal.removeEventListener('click', onBackdrop);
+      resolve(result);
+    }
+    function onOk()        { cleanup(true); }
+    function onCancel()    { cleanup(false); }
+    function onBackdrop(e) { if (e.target === modal) cleanup(false); }
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    modal.addEventListener('click', onBackdrop);
+  });
+}
+```
+
+### Użycie — zawsze przez `.then()`:
+
+```javascript
+// zamiast: if (confirm('Usunąć?')) { ... }
+showConfirm('Usunąć profil "Zuzia"?', 'Usuń', 'Anuluj').then(confirmed => {
+  if (confirmed) {
+    // wykonaj akcję
+  }
+});
+```
+
+**Kliknięcie tła modalu** zamyka dialog (= Anuluj). Nie trzeba dodawać osobnego event listenera.
+
+---
+
+## 13. Popup węzła mapy (`.star-popup`) — wzorzec dla `mapa.html`
+
+Popup pojawia się po kliknięciu kafelka na ścieżce przygody. Wyświetla 3 gwiazdki (tryby gry) dla danego węzła.
+
+### Kluczowe wymiary
+
+- **Szerokość:** `min(440px, 92vw)` — prawie na całą szerokość na telefonie, max 440px na desktopie.  
+  ⚠️ Nie używaj `var(--tile-w)` dla popupu — kafelki są węższe, popup powinien być szerszy.
+- **Animacja wejścia:** `scale(0.95) translateY(8px)` → `scale(1) translateY(0)` (centrowanie, nie slide-up z dołu ekranu)
+- **Overlay:** `align-items: center` (wyśrodkowany pionowo i poziomo)
+
+### CSS
+
+```css
+.star-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  visibility: hidden;
+  transition: background 0.22s ease, visibility 0s 0.22s;
+  padding: clamp(16px, 3vmin, 32px) 20px;
+}
+.star-popup-overlay.active {
+  background: rgba(0,0,0,0.7);
+  visibility: visible;
+  transition: background 0.22s ease, visibility 0s 0s;
+}
+
+.star-popup {
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: clamp(16px, 3vmin, 28px);   /* jednolite, nie asymetryczne */
+  padding: clamp(20px, 3.5vmin, 36px);
+  width: min(440px, 92vw);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 2vmin, 20px);
+  opacity: 0;
+  transform: scale(0.95) translateY(8px);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+.star-popup-overlay.active .star-popup {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+```
+
+### Przyciski gwiazdek — układ elementów (lewo → prawo)
+
+```
+[ikona gry]  [nazwa trybu ...............]  [⭐⭐⭐]  [✓ / ▶ / 🔒]
+```
+
+- Lewa ikona gry: `font-size: clamp(1.2rem, 2.5vmin, 1.6rem)` — stała, `flex-shrink: 0`
+- Nazwa: `flex: 1`, `font-weight: 600`
+- Gwiazdki po prawej: `white-space: nowrap`, `letter-spacing: 2px`, `flex-shrink: 0`
+- Status (`✓` zielony / `▶` fioletowy / `🔒`): `flex-shrink: 0` — zawsze na skraju prawym
+- Status `▶` — sama strzałka **bez tekstu** (nie "▶ Graj")
+
+**Ikony gier wg gwiazdki:**
+```javascript
+const GAME_ICONS  = ['🔵', '✏️', '⚙️'];  // Wybierz / Wpisz / Ustaw
+const STAR_LABELS = ['⭐', '⭐⭐', '⭐⭐⭐'];
+```
+
+### Nagłówek popupu
+
+Ikona wyspy + tytuł wyśrodkowane pionowo (w kolumnie), nie w rzędzie:
+
+```css
+.popup-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+.popup-icon  { font-size: clamp(2rem, 5vmin, 3rem); }
+.popup-title { font-size: clamp(1rem, 2.2vmin, 1.4rem); font-weight: 700; }
+```
+
+### Zamknięcie popupu
+
+**Nie dodawaj przycisku „Anuluj"** — użytkownik zamyka klikając poza okno (backdrop). Dodaj handler na overlay:
+
+```javascript
+document.getElementById('starPopup').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closePopup();
+});
+```
+
+**Status done:** tylko `✓` (zielony) — bez tekstu "Zdobyte".
+
+```css
+.star-opt-game-icon { font-size: clamp(1.2rem, 2.5vmin, 1.6rem); flex-shrink: 0; }
+.star-opt-stars     { font-size: clamp(0.85rem, 1.6vmin, 1.05rem); flex-shrink: 0; white-space: nowrap; letter-spacing: 2px; }
+.star-opt-body      { flex: 1; min-width: 0; }
+.star-opt-name      { font-size: clamp(0.9rem, 1.8vmin, 1.1rem); font-weight: 600; }
+.star-opt-status    { font-size: clamp(0.75rem, 1.4vmin, 0.9rem); flex-shrink: 0; }
+.status-done        { color: var(--success); font-weight: 700; }
+.status-play        { color: var(--accent);  font-weight: 700; }
+.status-locked      { color: var(--very-muted); }
+```
+
+## 14. Podpowiedzi — wzorzec FAB + Toast (nowy standard)
+
+Każda strona aplikacji powinna udostępniać kontekstową podpowiedź przez **pływający przycisk `?`** (FAB) w prawym dolnym rogu + **toast** wyskakujący od dołu.
+
+> ⚠️ **Stary wzorzec (`help-btn` + `feedback-bar` w topbarze) jest przestarzały.** Istniejące strony gry (`godziny.html`, `wpisz.html`, `ustaw.html`, `nauka.html`) korzystają ze starego wzorca — zostaną zmigrowane przy każdej przebudowie w kolejnych fazach.
+
+### Kiedy używać
+
+- Każda nowa strona (mapa, gra, hub) — FAB+Toast zamiast `.help-btn` w topbarze
+- Treść toastu dobierana kontekstowo per strona (`HINT_MSG` w JS)
+- Nie dodawaj stałego tekstu podpowiedzi do HTML strony — trafia wyłącznie do toastu
+
+### HTML — dodać przed `</body>`, przed skryptami:
+
+```html
+<!-- FAB ? -->
+<button class="fab-hint" id="fabHint" onclick="toggleHint()">?</button>
+
+<!-- Hint Toast -->
+<div class="hint-toast" id="hintToast">
+  <span class="hint-toast-icon">💡</span>
+  <div class="hint-toast-body">
+    <div class="hint-toast-title">Jak to działa?</div>
+    <div class="hint-toast-msg"><!-- treść kontekstowa --></div>
+  </div>
+  <div class="hint-toast-bar" id="hintBar"></div>
+</div>
+```
+
+### CSS — dodać do lokalnego `<style>` strony:
+
+```css
+.fab-hint {
+  position: fixed;
+  bottom: 24px; right: 20px;
+  z-index: 300;
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: #111;
+  border: 2px solid #333;
+  color: #555;
+  font-size: 1.3rem; font-weight: 700;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: color 0.2s, border-color 0.2s, transform 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+}
+.fab-hint:hover { color: #f0f0f0; border-color: #555; }
+.fab-hint.active { border-color: var(--accent); color: var(--accent); transform: rotate(15deg); }
+
+.hint-toast {
+  position: fixed;
+  bottom: 84px; left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  z-index: 299;
+  width: min(360px, calc(100vw - 40px));
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 16px;
+  padding: 14px 18px;
+  display: flex; align-items: flex-start; gap: 12px;
+  overflow: hidden;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+.hint-toast.visible { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+.hint-toast-icon  { font-size: 1.2rem; flex-shrink: 0; margin-top: 2px; }
+.hint-toast-body  { flex: 1; }
+.hint-toast-title { font-size: 0.72rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.hint-toast-msg   { font-size: 0.88rem; color: #ccc; line-height: 1.5; }
+.hint-toast-bar   {
+  position: absolute; bottom: 0; left: 0;
+  height: 3px; background: var(--accent); border-radius: 0 0 16px 16px;
+  width: 100%; transform-origin: left; transform: scaleX(0);
+}
+.hint-toast.auto-close .hint-toast-bar { transform: scaleX(1); transition: transform 5s linear; }
+```
+
+### JS — wkleić do `<script>` strony:
+
+```javascript
+let _hintOpen = false;
+let _hintTimer = null;
+
+function toggleHint() { _hintOpen ? closeHint() : openHint(); }
+
+function openHint() {
+  _hintOpen = true;
+  const fab   = document.getElementById('fabHint');
+  const toast = document.getElementById('hintToast');
+  const bar   = document.getElementById('hintBar');
+  fab.classList.add('active');
+  toast.classList.remove('auto-close');
+  toast.classList.add('visible');
+  bar.style.transition = 'none';
+  bar.style.transform  = 'scaleX(0)';
+  void bar.offsetWidth;           // wymuś reflow przed animacją
+  toast.classList.add('auto-close');
+  clearTimeout(_hintTimer);
+  _hintTimer = setTimeout(closeHint, 5000);
+}
+
+function closeHint() {
+  _hintOpen = false;
+  clearTimeout(_hintTimer);
+  document.getElementById('fabHint').classList.remove('active');
+  const toast = document.getElementById('hintToast');
+  toast.classList.remove('visible', 'auto-close');
+}
+```
+
+### Zachowanie
+
+- Toast wysuwa się od dołu (ponad FAB), znika automatycznie po 5s
+- Pasek na dole toastu odlicza czas — feedback wizualny autohide
+- Ponowne kliknięcie `?` zamyka toast przed czasem
+- `?` obraca się o 15° gdy aktywny
+- Toast **nie blokuje** scrollowania ani klikania innych elementów
+
+## 15. Responsywność — checklist przed oddaniem strony
 
 - [ ] Testuj przy 360px szerokości (mobile minimum)
 - [ ] Testuj przy 768px (tablet)

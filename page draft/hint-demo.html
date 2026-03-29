@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demo — Wariant B: Floating ? + Toast</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #000;
+      --card:      #111;
+      --card-hover:#1a1a1a;
+      --border:    #222;
+      --border-hi: #444;
+      --text:      #f0f0f0;
+      --muted:     #888;
+      --very-muted:#555;
+      --accent:    #bb86fc;
+      --gold:      #ffd700;
+      --success:   #16a34a;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ===== DEMO SWITCHER ===== */
+    .demo-nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 500;
+      background: #0a0a0a;
+      border-bottom: 2px solid #bb86fc;
+      display: flex;
+      align-items: center;
+      padding: 10px 16px;
+      gap: 12px;
+    }
+    .demo-nav span {
+      color: #bb86fc;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .demo-tab {
+      background: transparent;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #888;
+      font-size: 0.85rem;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .demo-tab.active { background: #bb86fc; border-color: #bb86fc; color: #000; font-weight: 700; }
+    .demo-tab:hover:not(.active) { color: #f0f0f0; border-color: #555; }
+
+    /* ===== SCREENS ===== */
+    .screen { display: none; padding-top: 50px; min-height: 100vh; flex-direction: column; }
+    .screen.active { display: flex; }
+
+    /* ===========================
+       EKRAN 1 — MAPA
+    =========================== */
+    .topbar-map {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 18px;
+      position: sticky;
+      top: 50px;
+      background: rgba(0,0,0,0.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      z-index: 100;
+    }
+    .tb-left { display: flex; align-items: center; gap: 10px; }
+    .avatar-sm {
+      font-size: 1.4rem;
+      background: #111;
+      border: 2px solid #222;
+      border-radius: 50%;
+      width: 40px; height: 40px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .player-name { font-size: 0.9rem; font-weight: 700; }
+    .xp-row { display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--muted); }
+    .xp-bar { width: 80px; height: 6px; background: #222; border-radius: 3px; }
+    .xp-fill { width: 35%; height: 100%; background: var(--accent); border-radius: 3px; }
+    .sec-badge {
+      background: #111; border: 1px solid #333; border-radius: 20px;
+      padding: 4px 10px; font-size: 0.8rem; font-weight: 700; color: var(--gold);
+    }
+
+    /* Kafelki mapy (uproszczone) */
+    .map-scroll {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 80px;
+      padding: 40px 0 120px;
+    }
+    .node-tile-demo {
+      width: min(280px, 80vw);
+      aspect-ratio: 1;
+      background: #111;
+      border: 2px solid #333;
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .node-tile-demo.done   { border-color: var(--success); }
+    .node-tile-demo.current { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(187,134,252,0.2); }
+    .node-tile-demo.locked { opacity: 0.45; cursor: default; }
+    .tile-icon { font-size: 2.8rem; }
+    .tile-name { font-size: 0.9rem; font-weight: 700; }
+    .tile-stars { font-size: 0.9rem; letter-spacing: 3px; }
+
+    /* ===========================
+       EKRAN 2 — GRA (uproszczona)
+    =========================== */
+    .topbar-game {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 18px;
+      position: sticky;
+      top: 50px;
+      background: rgba(0,0,0,0.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      z-index: 100;
+    }
+    .icon-btn-sm {
+      width: 36px; height: 36px;
+      background: transparent; border: none;
+      color: #888; font-size: 1.4rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 50%;
+      transition: color 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .icon-btn-sm:hover { color: #f0f0f0; }
+    .score-label { font-size: 0.85rem; color: var(--muted); }
+
+    .game-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      padding: 32px 20px 120px;
+      flex: 1;
+    }
+    .clock-placeholder {
+      width: 200px; height: 200px;
+      background: #111;
+      border: 2px solid #222;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 3rem;
+    }
+    .answer-btn-demo {
+      width: min(340px, 92vw);
+      padding: 16px;
+      background: #111;
+      border: 2px solid #222;
+      border-radius: 14px;
+      color: #f0f0f0;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .answer-btn-demo:hover { background: #1a1a1a; border-color: #444; }
+
+    /* ===========================
+       FLOATING ? — WSPÓLNE
+    =========================== */
+    .fab-hint {
+      position: fixed;
+      bottom: 24px;
+      right: 20px;
+      z-index: 300;
+
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #111;
+      border: 2px solid #333;
+      color: #888;
+      font-size: 1.4rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s, border-color 0.2s, background 0.2s, transform 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+    }
+    .fab-hint:hover { color: #f0f0f0; border-color: #555; }
+    .fab-hint.active {
+      background: #1a1a1a;
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: rotate(15deg);  /* subtelna animacja — znak ? lekko się obraca */
+    }
+
+    /* ===========================
+       TOAST — WSPÓLNE
+    =========================== */
+    .hint-toast {
+      position: fixed;
+      bottom: 84px;   /* powyżej FAB */
+      left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      z-index: 299;
+
+      width: min(360px, calc(100vw - 40px));
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 16px;
+      padding: 14px 18px;
+
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s ease, transform 0.22s ease;
+    }
+    .hint-toast.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(-50%) translateY(0);
+    }
+    .hint-toast-icon {
+      font-size: 1.3rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .hint-toast-body {
+      flex: 1;
+    }
+    .hint-toast-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .hint-toast-msg {
+      font-size: 0.9rem;
+      color: #ccc;
+      line-height: 1.5;
+    }
+    /* Pasek postępu autoczyszczenia */
+    .hint-toast-bar {
+      position: absolute;
+      bottom: 0; left: 0;
+      height: 3px;
+      background: var(--accent);
+      border-radius: 0 0 16px 16px;
+      width: 100%;
+      transform-origin: left;
+      transform: scaleX(0);
+      transition: none;
+    }
+    .hint-toast.auto-close .hint-toast-bar {
+      transform: scaleX(1);
+      transition: transform 5s linear;
+    }
+
+    /* ===========================
+       LEGENDA / OPIS
+    =========================== */
+    .demo-legend {
+      background: #0a0a0a;
+      border-top: 1px solid #222;
+      padding: 20px;
+      margin-top: auto;
+    }
+    .legend-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 10px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .legend-row strong { color: var(--text); }
+    .legend-dot { flex-shrink: 0; margin-top: 3px; }
+  </style>
+</head>
+<body>
+
+  <!-- DEMO NAVIGATION -->
+  <nav class="demo-nav">
+    <span>DEMO</span>
+    <button class="demo-tab active" onclick="showScreen('map')">🗺️ Mapa</button>
+    <button class="demo-tab" onclick="showScreen('game')">🎮 Gra</button>
+  </nav>
+
+  <!-- ==================== EKRAN: MAPA ==================== -->
+  <div class="screen active" id="screen-map">
+
+    <div class="topbar-map">
+      <div class="tb-left">
+        <div class="avatar-sm">🧑‍🚀</div>
+        <div>
+          <div class="player-name">Kuba</div>
+          <div class="xp-row">
+            Poz. 2
+            <div class="xp-bar"><div class="xp-fill"></div></div>
+            350 / 1000 XP
+          </div>
+        </div>
+      </div>
+      <div class="sec-badge">⏱ 1240</div>
+    </div>
+
+    <div class="map-scroll">
+      <div class="node-tile-demo done">
+        <div class="tile-icon">🏝️</div>
+        <div class="tile-name">Zatoka Pełnych Godzin</div>
+        <div class="tile-stars">⭐⭐⭐</div>
+      </div>
+      <div class="node-tile-demo current">
+        <div class="tile-icon">⛰️</div>
+        <div class="tile-name">Góry "Wpół do"</div>
+        <div class="tile-stars">⭐☆☆</div>
+      </div>
+      <div class="node-tile-demo locked">
+        <div class="tile-icon">🏛️</div>
+        <div class="tile-name">Pustynia Cyfr Rzymskich</div>
+        <div class="tile-stars">☆☆☆</div>
+      </div>
+    </div>
+
+    <div class="demo-legend">
+      <div class="legend-row"><span class="legend-dot">💡</span><span>Kliknij <strong>?</strong> w prawym rogu → pojawia się toast z podpowiedzią do mapy. Znika po 5s lub po ponownym kliknięciu <strong>?</strong>.</span></div>
+      <div class="legend-row"><span class="legend-dot">🔵</span><span>Toast jest <strong>non-intrusive</strong> — nie blokuje scrollowania ani klikania w kafelki. Można go zignorować.</span></div>
+      <div class="legend-row"><span class="legend-dot">⬇️</span><span>Pasek postępu na dole toastu pokazuje czas do autohide (5s).</span></div>
+    </div>
+
+  </div>
+
+  <!-- ==================== EKRAN: GRA ==================== -->
+  <div class="screen" id="screen-game">
+
+    <div class="topbar-game">
+      <button class="icon-btn-sm" title="Wróć">‹</button>
+      <div class="score-label">5 / 10</div>
+      <button class="icon-btn-sm" title="Ustawienia">⚙</button>
+    </div>
+
+    <div class="game-content">
+      <div class="clock-placeholder">🕐</div>
+      <p style="color:#888; font-size:0.9rem;">Która godzina?</p>
+      <button class="answer-btn-demo">7:00</button>
+      <button class="answer-btn-demo">7:30</button>
+      <button class="answer-btn-demo">8:00</button>
+    </div>
+
+    <div class="demo-legend">
+      <div class="legend-row"><span class="legend-dot">💡</span><span>W grze <strong>?</strong> jest w tym samym miejscu. Podpowiedź jest kontekstowa — inna niż na mapie (np. jak czytać wskazówki).</span></div>
+      <div class="legend-row"><span class="legend-dot">🔵</span><span>Toast <strong>nie przesłania zegara ani odpowiedzi</strong> — jest ponad FAB, poza główną treścią.</span></div>
+      <div class="legend-row"><span class="legend-dot">🟡</span><span>W grach można też zmienić na <strong>jednorazowy toast</strong> przy starcie (znika po 3s, bez przycisku ?).</span></div>
+    </div>
+
+  </div>
+
+  <!-- ==================== FLOATING FAB — globalny ==================== -->
+  <button class="fab-hint" id="fabHint" onclick="toggleHint()">?</button>
+
+  <!-- ==================== TOAST — globalny ==================== -->
+  <div class="hint-toast" id="hintToast">
+    <div class="hint-toast-icon" id="hintToastIcon">💡</div>
+    <div class="hint-toast-body">
+      <div class="hint-toast-title">Jak to działa?</div>
+      <div class="hint-toast-msg" id="hintToastMsg">Ładowanie…</div>
+    </div>
+    <div class="hint-toast-bar" id="hintBar"></div>
+  </div>
+
+  <script>
+    const HINTS = {
+      map:  'Kliknij kafelek wyspy, żeby wybrać ćwiczenie. Zdobywaj ⭐ gwiazdki — każda odpowiada innemu trybowi gry. Odblokuj kolejne wyspy ukańczając wszystkie gwiazdki.',
+      game: 'Odczytaj godzinę z zegara i kliknij poprawną odpowiedź. Wskazówka krótka → minuty, wskazówka długa → godziny. Możesz wybrać trudność w ustawieniach ⚙.'
+    };
+
+    let currentScreen = 'map';
+    let toastTimer    = null;
+    let isOpen        = false;
+
+    function showScreen(name) {
+      currentScreen = name;
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById('screen-' + name).classList.add('active');
+      document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      // zamknij toast przy zmianie ekranu
+      closeHint();
+    }
+
+    function toggleHint() {
+      if (isOpen) { closeHint(); return; }
+      openHint();
+    }
+
+    function openHint() {
+      isOpen = true;
+      const fab   = document.getElementById('fabHint');
+      const toast = document.getElementById('hintToast');
+      const msg   = document.getElementById('hintToastMsg');
+      const bar   = document.getElementById('hintBar');
+
+      msg.textContent = HINTS[currentScreen];
+      fab.classList.add('active');
+      toast.classList.remove('auto-close');
+      toast.classList.add('visible');
+
+      // reset paska
+      bar.style.transition = 'none';
+      bar.style.transform  = 'scaleX(0)';
+
+      // autoclose po 5s
+      clearTimeout(toastTimer);
+      // trigger reflow żeby transition zadziałał
+      void bar.offsetWidth;
+      toast.classList.add('auto-close');
+
+      toastTimer = setTimeout(() => {
+        closeHint();
+      }, 5000);
+    }
+
+    function closeHint() {
+      isOpen = false;
+      clearTimeout(toastTimer);
+      document.getElementById('fabHint').classList.remove('active');
+      const toast = document.getElementById('hintToast');
+      toast.classList.remove('visible');
+      toast.classList.remove('auto-close');
+    }
+  </script>
+
+</body>
+</html>
