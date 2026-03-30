@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mistrz Czasu — Prototyp Mapy #3 (Ścieżka)</title>
+  <title>Mistrz Czasu — Prototyp Mapy (4 pętle × 5 węzłów)</title>
   <style>
     /* ===== RESET & BASE ===== */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -29,7 +29,11 @@
       --gap:       clamp(80px, 18vmin, 160px);  /* długie odcinki linii = scrollowanie */
     }
 
-    html { scroll-behavior: smooth; }
+    html {
+      scroll-behavior: smooth;
+      scroll-snap-type: y proximity;         /* lekki snap — nie blokuje swobodnego scrollu */
+      scroll-padding-block: 15vh;            /* margines od krawędzi przy snap */
+    }
 
     body {
       background: var(--bg);
@@ -171,6 +175,11 @@
       background: color-mix(in srgb, var(--success) 60%, transparent);
     }
 
+    /* done → separator pętli: jednolita zieloń (koniec pętli) */
+    .path-node.done:has(+ .path-node.loop-sep)::after {
+      background: color-mix(in srgb, var(--success) 60%, transparent);
+    }
+
     /* current → locked: fiolet → szarość */
     .path-node.current::after {
       background: linear-gradient(to bottom,
@@ -188,6 +197,28 @@
       display: flex;
       flex-direction: column;
       align-items: stretch;
+    }
+
+    /* Snap-point — tylko prawdziwe kafelki, nie separatory pętli */
+    .path-node:not(.loop-sep) {
+      scroll-snap-align: center;
+    }
+
+    /* ===== VIGNETTE — przyciemnienie krawędzi ekranu ===== */
+    .scroll-vignette {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 50;   /* poniżej topbara (100) i popupa (200+) */
+      background: linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.88) 0%,
+        rgba(0,0,0,0.30) 18%,
+        rgba(0,0,0,0)    30%,
+        rgba(0,0,0,0)    70%,
+        rgba(0,0,0,0.30) 82%,
+        rgba(0,0,0,0.88) 100%
+      );
     }
 
     /* Kafelek — kwadratowy, układ pionowy (jak grid-item z Untitled-1) */
@@ -350,6 +381,36 @@
       background: var(--bg);
       border-color: var(--border);
       box-shadow: none;
+    }
+
+    /* ===== SEPARATOR PĘTLI ===== */
+    /* Separator to .path-node z własnym ::after — uczestniczy w flow ścieżki */
+    .path-node.loop-sep .node-tile {
+      aspect-ratio: auto;
+      padding: clamp(10px, 1.8vmin, 16px) clamp(16px, 2.5vmin, 24px);
+      flex-direction: row;
+      justify-content: center;
+      gap: 10px;
+      background: color-mix(in srgb, var(--accent) 5%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 25%, var(--border));
+      border-style: dashed;
+      cursor: default;
+    }
+    .path-node.loop-sep .node-tile:hover {
+      transform: none;
+      background: color-mix(in srgb, var(--accent) 5%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 25%, var(--border));
+    }
+    .path-node.loop-sep .node-dot {
+      border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+      background: var(--bg);
+    }
+    .loop-sep-icon { font-size: 1.4rem; line-height: 1; }
+    .loop-sep-label {
+      font-size: clamp(0.8rem, 1.5vmin, 0.95rem);
+      font-weight: 700;
+      color: color-mix(in srgb, var(--accent) 80%, var(--text));
+      letter-spacing: 0.3px;
     }
 
     /* ===== POPUP WYBORU GWIAZDKI ===== */
@@ -597,121 +658,11 @@
     <div class="map-title">🗺️ Wyprawa</div>
   </div>
 
-  <!-- ŚCIEŻKA -->
-  <div class="path-container" id="pathContainer">
+  <!-- ŚCIEŻKA (generowana dynamicznie przez JS z NODE_CONFIG + DEMO_STATE) -->
+  <div class="path-container" id="pathContainer"></div>
 
-
-    <!-- WĘZEŁ 1 — UKOŃCZONY -->
-    <div class="path-node done" data-node="full-hours">
-      <div class="node-tile" onclick="openPopup('full-hours')">
-        <span class="node-badge badge-done">✓ Ukończone</span>
-        <div class="node-icon">🏝️</div>
-        <div class="node-body">
-          <div class="node-name">Wyspa Pełnych Godzin</div>
-          <div class="node-stars">
-            <span class="star earned">⭐</span>
-            <span class="star earned">⭐</span>
-            <span class="star earned">⭐</span>
-          </div>
-          <div class="node-progress-bar">
-            <div class="node-progress-fill" style="width: 100%"></div>
-          </div>
-        </div>
-      </div>
-      <div class="node-dot bottom"></div>
-    </div>
-
-    <!-- WĘZEŁ 2 — AKTUALNY -->
-    <div class="path-node current" data-node="quarters">
-      <div class="node-dot top"></div>
-      <div class="node-tile" onclick="openPopup('quarters')">
-        <span class="node-badge badge-current">▶ W toku</span>
-        <div class="node-icon">🌊</div>
-        <div class="node-body">
-          <div class="node-name">Zatoka Kwadransów</div>
-          <div class="node-stars">
-            <span class="star earned">⭐</span>
-            <span class="star">⭐</span>
-            <span class="star">⭐</span>
-          </div>
-          <div class="node-progress-bar">
-            <div class="node-progress-fill" style="width: 40%"></div>
-          </div>
-        </div>
-      </div>
-      <div class="node-dot bottom"></div>
-    </div>
-
-    <!-- WĘZEŁ 3 — ZABLOKOWANY -->
-    <div class="path-node locked" data-node="half-past">
-      <div class="node-dot top"></div>
-      <div class="node-tile">
-        <span class="node-badge badge-locked">🔒</span>
-        <div class="node-icon">🏔️</div>
-        <div class="node-body">
-          <div class="node-name">Góry "Wpół do"</div>
-          <div class="node-stars">
-            <span class="star">⭐</span>
-            <span class="star">⭐</span>
-            <span class="star">⭐</span>
-          </div>
-          <div class="node-progress-bar">
-            <div class="node-progress-fill" style="width: 0%"></div>
-          </div>
-        </div>
-      </div>
-      <div class="node-dot bottom"></div>
-    </div>
-
-    <!-- WĘZEŁ 4 — ZABLOKOWANY -->
-    <div class="path-node locked" data-node="roman">
-      <div class="node-dot top"></div>
-      <div class="node-tile">
-        <span class="node-badge badge-locked">🔒</span>
-        <div class="node-icon">🏛️</div>
-        <div class="node-body">
-          <div class="node-name">Pustynia Cyfr Rzymskich</div>
-          <div class="node-stars">
-            <span class="star">⭐</span>
-            <span class="star">⭐</span>
-            <span class="star">⭐</span>
-          </div>
-          <div class="node-progress-bar">
-            <div class="node-progress-fill" style="width: 0%"></div>
-          </div>
-        </div>
-      </div>
-      <div class="node-dot bottom"></div>
-    </div>
-
-    <!-- WĘZEŁ 5 — ZABLOKOWANY -->
-    <div class="path-node locked" data-node="twenty-four-h">
-      <div class="node-dot top"></div>
-      <div class="node-tile">
-        <span class="node-badge badge-locked">🔒</span>
-        <div class="node-icon">🌃</div>
-        <div class="node-body">
-          <div class="node-name">Labirynt 24h</div>
-          <div class="node-stars">
-            <span class="star">⭐</span>
-            <span class="star">⭐</span>
-            <span class="star">⭐</span>
-          </div>
-          <div class="node-progress-bar">
-            <div class="node-progress-fill" style="width: 0%"></div>
-          </div>
-        </div>
-      </div>
-      <div class="node-dot bottom"></div>
-    </div>
-
-    <!-- Koniec ścieżki -->
-    <div class="path-end">
-      <div class="path-end-dot">🏆</div>
-      <div class="path-end-label">Mistrz Czasu</div>
-    </div>
-
-  </div>
+  <!-- Vignette — przyciemnienie górnej i dolnej krawędzi podczas scrollowania -->
+  <div class="scroll-vignette" aria-hidden="true"></div>
 
   <!-- FAB ? -->
   <button class="fab-hint" id="fabHint" onclick="toggleHint()">?</button>
@@ -721,7 +672,7 @@
     <span class="hint-toast-icon">💡</span>
     <div class="hint-toast-body">
       <div class="hint-toast-title">Jak to działa?</div>
-      <div class="hint-toast-msg">Podążaj ścieżką i zdobywaj gwiazdki na każdej wyspie. Zdobądź ⭐ żeby odblokować kolejną wyspę. Każda wyspa ma 3 ćwiczenia — od łatwego do trudnego.</div>
+      <div class="hint-toast-msg">Podążaj ścieżką i zdobywaj gwiazdki na każdej wyspie. Zdobądź ⭐ żeby odblokować kolejną. Każda wyspa ma 3 ćwiczenia — od łatwego do trudnego. Ukończ wszystkie 4 pętle (arabskie → rzymskie → bez cyfr → 24h), żeby zostać Mistrzem Czasu!</div>
     </div>
     <div class="hint-toast-bar" id="hintBar"></div>
   </div>
@@ -742,80 +693,205 @@
   </div>
 
   <script>
-    // ===== DATA =====
-    const NODES = {
-      'full-hours': {
-        icon: '🏝️', name: 'Wyspa Pełnych Godzin',
-        stars: [
-          { label: '⭐ Wybierz Godzinę', desc: 'Kliknij właściwą odpowiedź', done: true,  url: 'godziny.html?node=full-hours&star=1' },
-          { label: '⭐⭐ Wpisz Godzinę',  desc: 'Wpisz co widzisz na zegarze',  done: true,  url: 'wpisz.html?node=full-hours&star=2' },
-          { label: '⭐⭐⭐ Ustaw Wskazówki', desc: 'Ustaw dokładny czas',        done: true,  url: 'ustaw.html?node=full-hours&star=3' },
-        ]
-      },
-      'quarters': {
-        icon: '🌊', name: 'Zatoka Kwadransów',
-        stars: [
-          { label: '⭐ Wybierz Godzinę', desc: 'Kliknij właściwą odpowiedź', done: true,  url: 'godziny.html?node=quarters&star=1' },
-          { label: '⭐⭐ Wpisz Godzinę',  desc: 'Wpisz co widzisz na zegarze',  done: false, url: 'wpisz.html?node=quarters&star=2' },
-          { label: '⭐⭐⭐ Ustaw Wskazówki', desc: 'Ustaw dokładny czas',        done: false, url: 'ustaw.html?node=quarters&star=3' },
-        ]
-      },
+    // ===== KONFIGURACJA PĘTLI =====
+    const LOOP_CONFIG = {
+      arabic: { label: 'Pętla 1 — Cyfry Arabskie', icon: '🔢' },
+      roman:  { label: 'Pętla 2 — Cyfry Rzymskie',  icon: '🏛️' },
+      blank:  { label: 'Pętla 3 — Bez Cyfr',        icon: '🌑' },
+      '24h':  { label: 'Pętla 4 — Format 24h',      icon: '🌐' },
     };
 
-    let currentNode = null;
+    // ===== 20 WĘZŁÓW: 4 pętle × 5 mini-misji =====
+    const NODE_CONFIG = [
+      // Pętla 1 — cyfry arabskie
+      { id: 'full-hours',     loop: 'arabic', icon: '🏝️', name: 'Wyspa Pełnych Godzin' },
+      { id: 'quarters',       loop: 'arabic', icon: '🌊', name: 'Zatoka Kwadransów' },
+      { id: 'half-past',      loop: 'arabic', icon: '🏔️', name: 'Góry "Wpół do"' },
+      { id: 'every-five',     loop: 'arabic', icon: '🌿', name: 'Dolina Co Pięć Minut' },
+      { id: 'every-minute',   loop: 'arabic', icon: '🌀', name: 'Morze Każdej Minuty' },
+      // Pętla 2 — cyfry rzymskie
+      { id: 'roman-full',     loop: 'roman',  icon: '🏛️', name: 'Wyspa Cyfr Rzymskich' },
+      { id: 'roman-quarters', loop: 'roman',  icon: '🗿', name: 'Forum Kwadransów' },
+      { id: 'roman-half',     loop: 'roman',  icon: '⚔️', name: 'Koloseum Wpół do' },
+      { id: 'roman-five',     loop: 'roman',  icon: '🌁', name: 'Akwedukt Minut' },
+      { id: 'roman-minute',   loop: 'roman',  icon: '🔱', name: 'Labirynt Caesara' },
+      // Pętla 3 — bez cyfr
+      { id: 'blank-full',     loop: 'blank',  icon: '🌑', name: 'Wyspa Ciszy' },
+      { id: 'blank-quarters', loop: 'blank',  icon: '🌫️', name: 'Mglisty Przylądek' },
+      { id: 'blank-half',     loop: 'blank',  icon: '🌒', name: 'Dolina Cienia' },
+      { id: 'blank-five',     loop: 'blank',  icon: '🏜️', name: 'Pustynia Bez Znaków' },
+      { id: 'blank-minute',   loop: 'blank',  icon: '🌑', name: 'Mroczne Bezdroża' },
+      // Pętla 4 — format 24h
+      { id: '24h-full',       loop: '24h',    icon: '🌃', name: 'Brama Południa' },
+      { id: '24h-quarters',   loop: '24h',    icon: '🗼', name: 'Wieża Zegarowa' },
+      { id: '24h-half',       loop: '24h',    icon: '🌉', name: 'Kanał Wpół do' },
+      { id: '24h-five',       loop: '24h',    icon: '🚇', name: 'Metro Nocne' },
+      { id: '24h-minute',     loop: '24h',    icon: '🌐', name: 'Labirynt 24h' },
+    ];
+
+    // ===== DEMO STAN GRY (statyczny prototyp — pętla 1 w toku) =====
+    const DEMO_STATE = {
+      nodes: {
+        'full-hours':     { star1: true,  star2: true,  star3: true  },
+        'quarters':       { star1: true,  star2: false, star3: false },
+        'half-past':      { star1: false, star2: false, star3: false },
+        'every-five':     { star1: false, star2: false, star3: false },
+        'every-minute':   { star1: false, star2: false, star3: false },
+        'roman-full':     { star1: false, star2: false, star3: false },
+        'roman-quarters': { star1: false, star2: false, star3: false },
+        'roman-half':     { star1: false, star2: false, star3: false },
+        'roman-five':     { star1: false, star2: false, star3: false },
+        'roman-minute':   { star1: false, star2: false, star3: false },
+        'blank-full':     { star1: false, star2: false, star3: false },
+        'blank-quarters': { star1: false, star2: false, star3: false },
+        'blank-half':     { star1: false, star2: false, star3: false },
+        'blank-five':     { star1: false, star2: false, star3: false },
+        'blank-minute':   { star1: false, star2: false, star3: false },
+        '24h-full':       { star1: false, star2: false, star3: false },
+        '24h-quarters':   { star1: false, star2: false, star3: false },
+        '24h-half':       { star1: false, star2: false, star3: false },
+        '24h-five':       { star1: false, star2: false, star3: false },
+        '24h-minute':     { star1: false, star2: false, star3: false },
+      }
+    };
+
+    // ===== LOGIKA STANÓW WĘZŁÓW =====
+    function getNodeStatus(nodeId, idx) {
+      const s = DEMO_STATE.nodes[nodeId];
+      const anyStars = s.star1 || s.star2 || s.star3;
+      const allStars = s.star1 && s.star2 && s.star3;
+      if (allStars) return 'done';
+      if (idx === 0 || anyStars) return 'current';
+      // Poprzedni węzeł (pomiń separatory — cofaj do ostatniego prawdziwego węzła)
+      const prevId = NODE_CONFIG[idx - 1].id;
+      const prevS  = DEMO_STATE.nodes[prevId];
+      if (prevS.star1 || prevS.star2 || prevS.star3) return 'current';
+      return 'locked';
+    }
+
+    // ===== GENEROWANIE ŚCIEŻKI =====
+    function buildPath() {
+      const container = document.getElementById('pathContainer');
+      container.innerHTML = '';
+      let prevLoop = null;
+
+      NODE_CONFIG.forEach((node, idx) => {
+        // Separator pętli — przed pierwszym węzłem każdej nowej pętli (pominąć pętlę 1)
+        if (node.loop !== prevLoop && prevLoop !== null) {
+          const loopMeta = LOOP_CONFIG[node.loop];
+          const sep = document.createElement('div');
+          sep.className = 'path-node loop-sep';
+          sep.innerHTML = `
+            <div class="node-dot top"></div>
+            <div class="node-tile">
+              <span class="loop-sep-icon">${loopMeta.icon}</span>
+              <span class="loop-sep-label">${loopMeta.label}</span>
+            </div>
+            <div class="node-dot bottom"></div>
+          `;
+          container.appendChild(sep);
+        }
+        prevLoop = node.loop;
+
+        const status = getNodeStatus(node.id, idx);
+        const s = DEMO_STATE.nodes[node.id];
+        const starsEarned = [s.star1, s.star2, s.star3].filter(Boolean).length;
+        const progressPct  = Math.round((starsEarned / 3) * 100);
+        const isFirst      = (idx === 0);
+
+        let badgeHtml = '';
+        if (status === 'done')         badgeHtml = `<span class="node-badge badge-done">✓ Ukończone</span>`;
+        else if (status === 'current') badgeHtml = `<span class="node-badge badge-current">▶ W toku</span>`;
+        else                           badgeHtml = `<span class="node-badge badge-locked">🔒</span>`;
+
+        const clickAttr = status !== 'locked'
+          ? `onclick="openPopup('${node.id}')" role="button" tabindex="0"`
+          : '';
+
+        const nodeEl = document.createElement('div');
+        nodeEl.className   = `path-node ${status}`;
+        nodeEl.dataset.node = node.id;
+        nodeEl.innerHTML = `
+          ${!isFirst ? '<div class="node-dot top"></div>' : ''}
+          <div class="node-tile" ${clickAttr}>
+            ${badgeHtml}
+            <div class="node-icon">${node.icon}</div>
+            <div class="node-body">
+              <div class="node-name">${node.name}</div>
+              <div class="node-stars">
+                <span class="star ${s.star1 ? 'earned' : ''}">⭐</span>
+                <span class="star ${s.star2 ? 'earned' : ''}">⭐</span>
+                <span class="star ${s.star3 ? 'earned' : ''}">⭐</span>
+              </div>
+              <div class="node-progress-bar">
+                <div class="node-progress-fill" style="width: ${progressPct}%"></div>
+              </div>
+            </div>
+          </div>
+          <div class="node-dot bottom"></div>
+        `;
+        container.appendChild(nodeEl);
+      });
+
+      // Koniec ścieżki
+      const endEl = document.createElement('div');
+      endEl.className = 'path-end';
+      endEl.innerHTML = `
+        <div class="path-end-dot">🏆</div>
+        <div class="path-end-label">Mistrz Czasu</div>
+      `;
+      container.appendChild(endEl);
+    }
+
+    // ===== POPUP WYBORU GWIAZDKI =====
+    const GAME_ICONS  = ['🔵', '✏️', '⚙️'];
+    const STAR_LABELS = ['⭐', '⭐⭐', '⭐⭐⭐'];
+    const GAME_NAMES  = ['Wybierz Godzinę', 'Wpisz Godzinę', 'Ustaw Wskazówki'];
+    const GAME_PAGES  = ['godziny.html', 'wpisz.html', 'ustaw.html'];
 
     function openPopup(nodeId) {
-      const node = NODES[nodeId];
-      if (!node) return;
-      currentNode = nodeId;
+      const nodeConf = NODE_CONFIG.find(n => n.id === nodeId);
+      if (!nodeConf) return;
+      const s = DEMO_STATE.nodes[nodeId];
+      const starsDone  = [s.star1, s.star2, s.star3];
+      const nextStarIdx = starsDone.findIndex(done => !done);
 
-      document.getElementById('popupIcon').textContent  = node.icon;
-      document.getElementById('popupTitle').textContent = node.name;
+      document.getElementById('popupIcon').textContent  = nodeConf.icon;
+      document.getElementById('popupTitle').textContent = nodeConf.name;
 
       const container = document.getElementById('starOptions');
       container.innerHTML = '';
 
-      // Znajdź indeks pierwszej niezdobytej gwiazdki
-      const nextStarIdx = node.stars.findIndex(s => !s.done);
-      const GAME_ICONS  = ['🔵', '✏️', '⚙️'];
-      const STAR_LABELS = ['⭐', '⭐⭐', '⭐⭐⭐'];
-
-      node.stars.forEach((star, idx) => {
-        const btn = document.createElement('button');
-        btn.className = 'star-opt-btn' + (star.done ? ' earned' : '');
-
+      starsDone.forEach((done, idx) => {
         const isNext   = idx === nextStarIdx;
-        const isLocked = !star.done && !isNext;
+        const isLocked = !done && !isNext;
 
         let statusHtml;
-        if (star.done)        statusHtml = `<span class="star-opt-status status-done">✓</span>`;
-        else if (isNext)      statusHtml = `<span class="star-opt-status status-play">▶</span>`;
-        else                  statusHtml = `<span class="star-opt-status status-locked">🔒</span>`;
+        if (done)          statusHtml = `<span class="star-opt-status status-done">✓</span>`;
+        else if (isNext)   statusHtml = `<span class="star-opt-status status-play">▶</span>`;
+        else               statusHtml = `<span class="star-opt-status status-locked">🔒</span>`;
 
-        const gameIcon = GAME_ICONS[idx]  ?? '🎮';
-        const starLabel = STAR_LABELS[idx] ?? '⭐';
-        const gameName  = star.label.replace(/^[\u2B50\uFE0F\u2605 ]+/, '').trim();
-
+        const btn = document.createElement('button');
+        btn.className = 'star-opt-btn' + (done ? ' earned' : '');
         btn.innerHTML = `
-          <span class="star-opt-game-icon">${gameIcon}</span>
+          <span class="star-opt-game-icon">${GAME_ICONS[idx]}</span>
           <div class="star-opt-body">
-            <div class="star-opt-name">${gameName}</div>
+            <div class="star-opt-name">${GAME_NAMES[idx]}</div>
           </div>
-          <span class="star-opt-stars">${starLabel}</span>
+          <span class="star-opt-stars">${STAR_LABELS[idx]}</span>
           ${statusHtml}
         `;
 
-        if (!isLocked) {
-          btn.addEventListener('click', () => {
-            closePopup();
-            // W realnej implementacji: location.href = star.url;
-            alert(`Nawigacja do: ${star.url}`);
-          });
-        } else {
+        if (isLocked) {
           btn.style.opacity = '0.45';
           btn.style.cursor  = 'default';
+        } else {
+          btn.addEventListener('click', () => {
+            closePopup();
+            // W realnej implementacji: location.href = `${GAME_PAGES[idx]}?node=${nodeId}&star=${idx + 1}`;
+            alert(`Nawigacja do: ${GAME_PAGES[idx]}?node=${nodeId}&star=${idx + 1}`);
+          });
         }
-
         container.appendChild(btn);
       });
 
@@ -834,13 +910,11 @@
     let _hintOpen = false;
     let _hintTimer = null;
 
-    function toggleHint() {
-      _hintOpen ? closeHint() : openHint();
-    }
+    function toggleHint() { _hintOpen ? closeHint() : openHint(); }
 
     function openHint() {
       _hintOpen = true;
-      const fab  = document.getElementById('fabHint');
+      const fab   = document.getElementById('fabHint');
       const toast = document.getElementById('hintToast');
       const bar   = document.getElementById('hintBar');
       fab.classList.add('active');
@@ -848,7 +922,7 @@
       toast.classList.add('visible');
       bar.style.transition = 'none';
       bar.style.transform  = 'scaleX(0)';
-      void bar.offsetWidth;  // reflow
+      void bar.offsetWidth; // wymuś reflow przed animacją
       toast.classList.add('auto-close');
       clearTimeout(_hintTimer);
       _hintTimer = setTimeout(closeHint, 5000);
@@ -860,6 +934,19 @@
       document.getElementById('fabHint').classList.remove('active');
       const toast = document.getElementById('hintToast');
       toast.classList.remove('visible', 'auto-close');
+    }
+
+    // ===== INIT =====
+    buildPath();
+
+    // Przewiń do pierwszego węzła "current" (lub pierwszego "locked" jeśli brak current)
+    const focusNode = document.querySelector('.path-node.current') ||
+                      document.querySelector('.path-node.locked');
+    if (focusNode) {
+      // requestAnimationFrame zapewnia że layout jest gotowy przed scrollem
+      requestAnimationFrame(() => {
+        focusNode.scrollIntoView({ behavior: 'instant', block: 'center' });
+      });
     }
   </script>
 
