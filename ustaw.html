@@ -222,6 +222,21 @@
 			-webkit-tap-highlight-color: transparent;
 		}
 		.star-overlay-map:hover { color: #f0f0f0; }
+		.star-overlay-reward {
+			background: color-mix(in srgb, #ffd700 14%, transparent);
+			border: 1px solid color-mix(in srgb, #ffd700 38%, transparent);
+			color: #ffd700;
+			border-radius: 20px;
+			padding: clamp(3px, 0.5vmin, 5px) clamp(10px, 1.8vmin, 16px);
+			font-size: clamp(0.85rem, 1.6vmin, 1rem);
+			font-weight: 700;
+		}
+		.star-overlay-unlock {
+			font-size: clamp(0.78rem, 1.4vmin, 0.92rem);
+			color: #4ade80;
+			font-weight: 600;
+		}
+		.star-overlay-box.island-complete { border-color: #ffd700; }
 
 		/* ---- Achievement Overlay ---- */
 		.achievement-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0); z-index: 500; display: flex; align-items: center; justify-content: center; visibility: hidden; transition: background 0.3s ease, visibility 0s 0.3s; padding: clamp(16px, 3vmin, 32px); }
@@ -325,6 +340,8 @@
 			<div class="star-overlay-stars" id="starOverlayStars">⭐⭐⭐</div>
 			<div class="star-overlay-title" id="starOverlayTitle">Gwiazdka zdobyta!</div>
 			<div class="star-overlay-subtitle" id="starOverlaySubtitle">Doskonała robota!</div>
+			<div class="star-overlay-reward" id="starOverlayReward" style="display:none">+50 ⏳ Sekund</div>
+			<div class="star-overlay-unlock" id="starOverlayUnlock" style="display:none"></div>
 			<button class="star-overlay-next" id="starOverlayNext" style="display:none">▶ Zagraj dalej</button>
 			<a class="star-overlay-map" id="starOverlayMap" href="mapa.html">← Wróć do Mapy</a>
 		</div>
@@ -699,13 +716,38 @@
 		function showStarOverlay() {
 			const starLabels = ['⭐', '⭐⭐', '⭐⭐⭐'];
 			document.getElementById('starOverlayStars').textContent = starLabels[expeditionStar - 1] || '⭐⭐⭐';
-			document.getElementById('starOverlayTitle').textContent = 'Gwiazdka zdobyta!';
 			document.getElementById('starOverlaySubtitle').textContent =
 				'Poprawnych: ' + session.total + '  •  Najlepsza seria: ' + session.bestStreak;
 
-			// ustaw.html is always star 3 — no "Zagraj dalej"
+			// Nagroda +50 Sekund
+			document.getElementById('starOverlayReward').textContent = '+50 ⏳ Sekund';
+			document.getElementById('starOverlayReward').style.display = '';
+
+			// Specjalna celebracja: wyspa ukończona (zawsze star 3 w ustaw.html)
+			const box = document.getElementById('starOverlay').querySelector('.star-overlay-box');
+			box.classList.add('island-complete');
+			document.getElementById('starOverlayTitle').textContent = 'Wyspa ukończona! 🏆';
+
+			// Komunikat o odblokowaniu: ostatnia wyspa pętli odblokowuje następną pętlę
+			const nodeOrder  = Object.keys(NODE_CONFIG);
+			const curIdx     = nodeOrder.indexOf(expeditionNode);
+			const nextId     = (curIdx !== -1 && curIdx < nodeOrder.length - 1) ? nodeOrder[curIdx + 1] : null;
+			const _getLoop   = c => c.hourFormat === '24' ? '24h' : (c.dialType || 'arabic');
+			const isLastInLoop = !nextId || _getLoop(NODE_CONFIG[nextId]) !== _getLoop(NODE_CONFIG[expeditionNode]);
+
+			const unlockEl = document.getElementById('starOverlayUnlock');
+			if (!nextId) {
+				unlockEl.textContent = '🏆 Zostałeś Mistrzem Czasu!';
+				unlockEl.style.display = '';
+			} else if (isLastInLoop) {
+				unlockEl.textContent = '🔓 ' + NODE_CONFIG[nextId].label + ' odblokowana!';
+				unlockEl.style.display = '';
+			} else {
+				unlockEl.style.display = 'none';
+			}
+
 			document.getElementById('starOverlayNext').style.display = 'none';
-			document.getElementById('starOverlayMap').textContent    = '← Wróć do Mapy';
+			document.getElementById('starOverlayMap').textContent = '← Wróć do Mapy';
 			document.getElementById('starOverlay').classList.add('active');
 		}
 
