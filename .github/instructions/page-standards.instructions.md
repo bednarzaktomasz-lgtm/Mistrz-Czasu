@@ -647,3 +647,162 @@ function closeHint() {
 - [ ] Przyciski mają min. 48px wysokości na dotykowym (zapewnione przez `var(--btn-height)`)
 - [ ] Fonty czytelne: minimum 14px w trybie mobile (zapewnione przez `clamp`)
 - [ ] `-webkit-tap-highlight-color: transparent` na wszystkich klikalnych elementach
+
+---
+
+## 16. Pasek postępu — JEDYNY dozwolony wzorzec (`star-progress`)
+
+> ⚠️ **KRYTYCZNE:** Na stronach gry używaj **wyłącznie** wzorca `star-progress` opisanego poniżej. Nie wymyślaj własnych pasków postępu, nie używaj `<progress>`, nie twórz klas `.progress-bar`, `.score-bar`, `.progress-fill` ani żadnych innych. Jedyne wyjątki: `.node-progress-bar` w `mapa.html` (specyficzny dla węzłów mapy).
+
+### Umiejscowienie
+
+- `star-progress` to **samodzielny element w `<body>`**, umieszczony **bezpośrednio pod topbarem** (nie wewnątrz `.content-area`)
+- W strukturze body zajmuje slot **D** (między topbarem/feedback-barem a zegarnick lub content-area)
+- Wyjątek: jeśli strona nie korzysta z paska postępu gry — po prostu go pomijasz
+
+### CSS — wkleić do lokalnego `<style>` strony:
+
+```css
+.star-progress {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(5px, 1vmin, 8px);
+  width: min(560px, 92vw);
+  padding: clamp(8px, 1.3vmin, 14px) clamp(10px, 1.5vmin, 16px);
+  background: #0d0d0d;
+  border: 1px solid #222;
+  border-radius: var(--btn-radius);
+}
+.spi-row {
+  display: flex;
+  align-items: center;
+  gap: clamp(6px, 1vmin, 10px);
+}
+.spi-label {
+  font-size: clamp(0.65rem, 1.3vmin, 0.85rem);
+  color: #888;
+  width: clamp(68px, 11vmin, 90px);
+  flex-shrink: 0;
+}
+.spi-track {
+  flex: 1;
+  height: clamp(6px, 1vmin, 8px);
+  background: #222;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.spi-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: #bb86fc;
+  transition: width 0.35s ease;
+  width: 0%;
+}
+.spi-fill.spi-streak { background: #f0c040; }
+.spi-fill.done       { background: #16a34a !important; transition: none; }
+.spi-count {
+  font-size: clamp(0.65rem, 1.3vmin, 0.85rem);
+  color: #888;
+  min-width: 2.5em;
+  text-align: right;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+```
+
+### HTML — przykład z dwoma wierszami (Poprawne + Seria):
+
+```html
+<!-- Pasek postępu — bezpośrednio w <body>, pod topbarem -->
+<div class="star-progress" id="starProgress">
+  <div class="spi-row">
+    <span class="spi-label">Poprawne</span>
+    <div class="spi-track"><div class="spi-fill" id="spCorrect"></div></div>
+    <span class="spi-count" id="spCorrectTxt">0 / 12</span>
+  </div>
+  <div class="spi-row">
+    <span class="spi-label">Seria</span>
+    <div class="spi-track"><div class="spi-fill spi-streak" id="spStreak"></div></div>
+    <span class="spi-count" id="spStreakTxt">0</span>
+  </div>
+</div>
+```
+
+### HTML — wariant z etykietą levelu (gdy strona ma poziomy/levele):
+
+```html
+<div class="star-progress" id="starProgress">
+  <!-- opcjonalny nagłówek levelu -->
+  <div class="level-badge">
+    <span class="level-badge-name" id="levelName">Poziom 1 — Podstawa</span>
+    <span class="level-badge-num" id="levelNum">1 / 10</span>
+  </div>
+  <!-- opcjonalny wiersz na feedback inline -->
+  <div class="spi-row" style="min-height: clamp(18px,2.5vmin,28px)">
+    <span class="feedback" id="feedback" style="min-height:0;font-size:clamp(0.75rem,1.6vmin,1rem)"></span>
+  </div>
+  <div class="spi-row">
+    <span class="spi-label">Dopasowane</span>
+    <div class="spi-track"><div class="spi-fill" id="spMatched"></div></div>
+    <span class="spi-count" id="spMatchedTxt">0/3</span>
+  </div>
+  <div class="spi-row">
+    <span class="spi-label">Dokładność</span>
+    <div class="spi-track"><div class="spi-fill" id="spAccuracy" style="background:#f0c040"></div></div>
+    <span class="spi-count" id="spAccuracyTxt">—</span>
+  </div>
+</div>
+```
+
+CSS dla wariantu z levelem:
+```css
+.level-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(6px, 1vmin, 10px);
+  margin-bottom: clamp(2px, 0.5vmin, 4px);
+}
+.level-badge-name {
+  font-size: clamp(0.75rem, 1.5vmin, 0.95rem);
+  color: #bb86fc;
+  font-weight: 600;
+}
+.level-badge-num {
+  font-size: clamp(0.65rem, 1.3vmin, 0.82rem);
+  color: #555;
+}
+```
+
+### JS — funkcja aktualizacji paska:
+
+```javascript
+function updateBars() {
+  const pct = (score / TOTAL) * 100;
+  spCorrectEl.style.width    = pct + '%';
+  spCorrectTxtEl.textContent = `${score} / ${TOTAL}`;
+  if (score === TOTAL) spCorrectEl.classList.add('done');
+
+  // Seria: normalizuj do max (np. 5 = 100%)
+  const STREAK_MAX = 5;
+  const sPct = Math.min((streak / STREAK_MAX) * 100, 100);
+  spStreakEl.style.width    = sPct + '%';
+  spStreakTxtEl.textContent = String(streak);
+}
+```
+
+### Kolory wypełnienia (`.spi-fill`)
+
+| Modyfikator klasy | Kolor | Zastosowanie |
+|---|---|---|
+| *(brak — domyślny)* | `#bb86fc` (fioletowy) | Poprawne odpowiedzi, dopasowane |
+| `.spi-streak` | `#f0c040` (złoty) | Seria (streak) |
+| `.done` | `#16a34a` (zielony) | Pasek ukończony — 100% |
+| *(inline style)* | `#f0c040` | Dokładność (accuracy) |
+
+### Kluczowe zasady
+
+- Szerokość `star-progress`: `width: min(560px, 92vw)` — **nie** `width: 100%` gdy element jest poza `.content-area`; `width: 100%` tylko gdy jest wewnątrz `.content-area`
+- Nigdy nie dodawaj `margin-bottom` do `.star-progress` — odstępy zarządza `gap` na `body`
+- Pasek jest widoczny zawsze (nie chowaj go, nie toggleuj przez display:none)
+- `id` elementów: `spCorrect`, `spCorrectTxt`, `spStreak`, `spStreakTxt` — konwencja nazewnicza obowiązuje

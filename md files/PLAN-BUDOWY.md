@@ -422,8 +422,8 @@ Implementacja: na starcie gry `?node` odczytany z URL → `activeModes` ustawion
 - [x] **4.3** `purchaseItem(category, itemId)` — sprawdza Sekundy, odblokuje, odejmuje, zapisuje
 - [x] **4.4** `equipItem(category, itemId)` — zmienia aktywny styl (tylko wśród odblokowanych)
 - [x] **4.5** Animowany podgląd `ClockRenderer` na żywo w garderobie (aktualizuje się przy zmianie aktywnego stylu)
-- [ ] **4.6** Tryby gry czytają z `wardrobe` zamiast `zegar_*` localStorage
-- [ ] **4.7** `ustawienia.html` — usunąć sekcje Tła i Kolory Wskazówek (przeniesione), zostaje: style cyfr, format 12/24h, dźwięk, podpowiedź
+- [x] **4.6** Tryby gry czytają z `wardrobe` zamiast `zegar_*` localStorage
+- [x] **4.7** `ustawienia.html` — usunąć sekcje Tła i Kolory Wskazówek (przeniesione), zostaje: style cyfr, format 12/24h, dźwięk, podpowiedź
 
 ### Pliki: nowy `garderoba.html`; modyfikacja `game-state.js`, `ustawienia.html`, `start.html`, tryby gry
 
@@ -433,8 +433,8 @@ Implementacja: na starcie gry `?node` odczytany z URL → `activeModes` ustawion
 - [x] Podgląd zegara aktualizuje się na żywo przy założeniu
 - [x] Zakup zmniejsza Sekundy
 - [x] Brak zakupu bez funduszy
-- [ ] Styl widoczny we wszystkich trybach
-- [ ] Per profil
+- [x] Styl widoczny we wszystkich trybach
+- [x] Per profil
 
 ---
 
@@ -588,4 +588,4 @@ FAZA 1 (profile + dane) ──► FAZA 2 (dashboard) ──► FAZA 3 (integracj
 ---
 
 *Plan utworzony: 29.03.2026*
-*Ostatnia aktualizacja: 06.04.2026 — Faza 6 ukończona: 9 odznak, overlay, trofea.html*
+*Ostatnia aktualizacja: 10.04.2026 — 4.6 + 4.7 ukończone: tryby gry czytają styl z wardrobe; sekcje Tła/Wskazówki usunięte z ustawienia.html*

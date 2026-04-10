@@ -7,71 +7,6 @@
   <link rel="stylesheet" href="clock-styles.css" />
   <link rel="stylesheet" href="layout.css" />
   <style>
-    /* ---- Controls row: bg icons + hand color icons ---- */
-    .controls-row {
-      width: 80vw;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: clamp(32px, 8vmin, 100px);
-    }
-
-    .controls-group {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: clamp(10px, 1.5vmin, 18px);
-    }
-
-    .controls-label {
-      color: #888;
-      font-size: clamp(0.8rem, 1.5vmin, 1.2rem);
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-
-    /* Override bg-btn size for the settings page */
-    #bgControlsContainer .bg-controls {
-      margin-top: 0;
-      gap: clamp(10px, 2vmin, 20px);
-    }
-
-    #bgControlsContainer .bg-controls .bg-btn {
-      width: clamp(40px, 6vmin, 64px);
-      height: clamp(40px, 6vmin, 64px);
-    }
-
-    /* Hand color dots */
-    .hand-controls {
-      display: flex;
-      gap: clamp(10px, 2vmin, 20px);
-    }
-
-    .hand-btn {
-      width: clamp(40px, 6vmin, 64px);
-      height: clamp(40px, 6vmin, 64px);
-      border-radius: 50%;
-      border: 2px solid #333;
-      cursor: pointer;
-      transition: transform 0.2s, border-color 0.2s;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .hand-btn:hover {
-      transform: scale(1.1);
-      border-color: #d82928;
-    }
-
-    .hand-btn.active {
-      border-color: #d82928;
-      box-shadow: 0 0 10px rgba(216, 41, 40, 0.4);
-    }
-
-    .hand-btn.h-white { background: #f0f0f0; }
-    .hand-btn.h-blue  { background: #2563eb; }
-    .hand-btn.h-red   { background: #d82928; }
-
     /* ---- Settings panel ---- */
     .settings-panel {
       width: 80vw;
@@ -171,21 +106,6 @@
 
 <div class="clock-wrap" id="clockContainer"></div>
 
-<div class="controls-row">
-  <div class="controls-group">
-    <div class="controls-label">Tarcza</div>
-    <div id="bgControlsContainer"></div>
-  </div>
-  <div class="controls-group">
-    <div class="controls-label">Wskazówki</div>
-    <div class="hand-controls">
-      <div class="hand-btn h-white active" data-color="white" title="Białe"></div>
-      <div class="hand-btn h-blue" data-color="blue" title="Niebieskie"></div>
-      <div class="hand-btn h-red" data-color="red" title="Czerwone"></div>
-    </div>
-  </div>
-</div>
-
 <div class="settings-panel">
 
   <div class="settings-section">
@@ -233,8 +153,6 @@
     activeModes: 'zegar_activeModes',
     soundEnabled: 'zegar_soundEnabled',
     showTimeHint: 'zegar_showTimeHint',
-    clockBg: 'zegar_clockBg',
-    handColor: 'zegar_handColor',
     numberStyle: 'zegar_numberStyle',
     hourFormat: 'zegar_hourFormat',
   };
@@ -244,8 +162,6 @@
     activeModes: ['full'],
     soundEnabled: true,
     showTimeHint: true,
-    clockBg: 'solid',
-    handColor: 'white',
     numberStyle: 'arabic',
     hourFormat: '12',
   };
@@ -256,8 +172,6 @@
       activeModes: JSON.parse(localStorage.getItem(STORAGE_KEYS.activeModes)) || DEFAULTS.activeModes,
       soundEnabled: localStorage.getItem(STORAGE_KEYS.soundEnabled) !== 'false',
       showTimeHint: localStorage.getItem(STORAGE_KEYS.showTimeHint) !== 'false',
-      clockBg: localStorage.getItem(STORAGE_KEYS.clockBg) || DEFAULTS.clockBg,
-      handColor: localStorage.getItem(STORAGE_KEYS.handColor) || DEFAULTS.handColor,
       numberStyle: localStorage.getItem(STORAGE_KEYS.numberStyle) || DEFAULTS.numberStyle,
       hourFormat: localStorage.getItem(STORAGE_KEYS.hourFormat) || DEFAULTS.hourFormat,
     };
@@ -265,10 +179,8 @@
 
   // ==================== DOM References ====================
   const clockContainer = document.getElementById("clockContainer");
-  const bgControlsContainer = document.getElementById("bgControlsContainer");
   const modeToggles = document.querySelectorAll('[data-mode]');
   const numberBtns = document.querySelectorAll('[data-numbers]');
-  const handBtns = document.querySelectorAll('.hand-btn');
   const soundToggle = document.getElementById('soundToggle');
   const timeHintToggle = document.getElementById('timeHintToggle');
   const hourFormatToggle = document.getElementById('hourFormatToggle');
@@ -286,9 +198,7 @@
     showDigital: true,
     showDate: true,
     showSecondHand: true,
-    showBgControls: true,
-    bgControlsContainer: bgControlsContainer,
-    handColor: settings.handColor,
+    showBgControls: false,
   });
 
   // ==================== Apply Settings to UI ====================
@@ -296,20 +206,6 @@
   modeToggles.forEach(btn => {
     btn.classList.toggle('active', settings.activeModes.includes(btn.dataset.mode));
   });
-
-  // Hand color buttons
-  handBtns.forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.color === settings.handColor);
-  });
-
-  // Background buttons (rendered by ClockRenderer)
-  setTimeout(() => {
-    const bgBtns = bgControlsContainer.querySelectorAll('.bg-btn');
-    bgBtns.forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.bg === settings.clockBg);
-    });
-    clock.setBackground(settings.clockBg);
-  }, 0);
 
   // Number style buttons
   numberBtns.forEach(btn => {
@@ -350,27 +246,6 @@
       clock.setNumberStyle(style);
     });
   });
-
-  // Hand color buttons (single-select)
-  handBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      handBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      const color = btn.dataset.color;
-      localStorage.setItem(STORAGE_KEYS.handColor, color);
-      clock.setHandColor(color);
-    });
-  });
-
-  // Background buttons — inject listener after ClockRenderer creates them
-  setTimeout(() => {
-    const bgBtns = bgControlsContainer.querySelectorAll('.bg-btn');
-    bgBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        localStorage.setItem(STORAGE_KEYS.clockBg, btn.dataset.bg);
-      });
-    });
-  }, 0);
 
   // Sound toggle
   soundToggle.addEventListener('click', () => {

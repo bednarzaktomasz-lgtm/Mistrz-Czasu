@@ -429,13 +429,12 @@
 			const STORAGE_KEYS = {
 				activeModes: 'zegar_activeModes',
 				soundEnabled: 'zegar_soundEnabled',
-				clockBg: 'zegar_clockBg',
-				handColor: 'zegar_handColor',
 				numberStyle: 'zegar_numberStyle',
 				hourFormat: 'zegar_hourFormat',
 			};
 
 			function loadGlobalSettings() {
+				const gameState = (typeof loadGame === 'function') ? loadGame() : null;
 				let ns = localStorage.getItem(STORAGE_KEYS.numberStyle) || 'arabic';
 				let hf = localStorage.getItem(STORAGE_KEYS.hourFormat) || '12';
 				if (nodeConf) {
@@ -445,8 +444,8 @@
 				return {
 					activeModes:  JSON.parse(localStorage.getItem(STORAGE_KEYS.activeModes)) || ['full'],
 					soundEnabled: localStorage.getItem(STORAGE_KEYS.soundEnabled) !== 'false',
-					clockBg:      localStorage.getItem(STORAGE_KEYS.clockBg) || 'solid',
-					handColor:    localStorage.getItem(STORAGE_KEYS.handColor) || 'white',
+					clockBg:      gameState?.wardrobe?.activeBg || 'solid',
+					handColor:    gameState?.wardrobe?.activeHandColor || 'white',
 					numberStyle:  ns,
 					hourFormat:   hf,
 				};
@@ -587,13 +586,13 @@
 			const correctTarget = isExpedition ? 8 : 12;
 			function updateProgressBar() {
 				const correctPct = Math.min(100, Math.round((session.total / correctTarget) * 100));
-				const streakPct  = Math.min(100, Math.round((session.bestStreak / 6) * 100));
+				const streakPct  = Math.min(100, Math.round((session.streak / 6) * 100));
 				document.getElementById('spCorrect').style.width = correctPct + '%';
 				document.getElementById('spStreak').style.width  = streakPct  + '%';
 				document.getElementById('spCorrectTxt').textContent = session.total + '/' + correctTarget;
-				document.getElementById('spStreakTxt').textContent  = session.bestStreak + '/6';
+				document.getElementById('spStreakTxt').textContent  = session.streak + '/6';
 				if (session.total >= correctTarget) document.getElementById('spCorrect').classList.add('done');
-				if (session.bestStreak >= 6) document.getElementById('spStreak').classList.add('done');
+				if (session.streak >= 6) document.getElementById('spStreak').classList.add('done');
 			}
 
 			// ==================== Game Logic ====================

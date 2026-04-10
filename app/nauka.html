@@ -109,15 +109,14 @@
 
   // ==================== Load Global Settings ====================
   const STORAGE_KEYS = {
-    clockBg: 'zegar_clockBg',
-    handColor: 'zegar_handColor',
     numberStyle: 'zegar_numberStyle',
   };
 
   function loadGlobalSettings() {
+    const gameState = (typeof loadGame === 'function') ? loadGame() : null;
     return {
-      clockBg: localStorage.getItem(STORAGE_KEYS.clockBg) || 'solid',
-      handColor: localStorage.getItem(STORAGE_KEYS.handColor) || 'white',
+      clockBg: gameState?.wardrobe?.activeBg || 'solid',
+      handColor: gameState?.wardrobe?.activeHandColor || 'white',
       numberStyle: localStorage.getItem(STORAGE_KEYS.numberStyle) || 'arabic',
     };
   }

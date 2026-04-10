@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dopasuj Cyfry — Mistrz Czasu</title>
+  <link rel="stylesheet" href="clock-styles.css" />
+  <link rel="stylesheet" href="layout.css" />
+  <style>
+    /* ===== DEMO-MATCH — page-specific styles ===== */
+
+    /* Podświetlona pozycja na zegarze */
+    .clock .num.target { font-size: 0 !important; /* ukryj cyfry pod kółkiem */
+      visibility: visible !important;
+      color: transparent;
+      background: rgba(187, 134, 252, 0.25);
+      border: 2px solid #bb86fc;
+      border-radius: 50%;
+      width:  clamp(28px, 5vmin, 52px);
+      height: clamp(28px, 5vmin, 52px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: pulse-target 1s ease-in-out infinite;
+      /* wyrównaj centrum z pozycją cyfry */
+      transform: translate(-50%, -55%);
+    }
+
+    /* Poprawnie umieszczona cyfra */
+    .clock .num.placed {
+      visibility: visible !important;
+      color: #16a34a;
+      animation: pop-in 0.3s ease-out;
+    }
+
+    @keyframes pulse-target {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(187, 134, 252, 0.6); }
+      50%       { box-shadow: 0 0 0 8px rgba(187, 134, 252, 0); }
+    }
+
+    @keyframes pop-in {
+      0%   { transform: translate(-50%, -55%) scale(0.5); opacity: 0; }
+      70%  { transform: translate(-50%, -55%) scale(1.2); }
+      100% { transform: translate(-50%, -55%) scale(1);   opacity: 1; }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%       { transform: translateX(-8px); }
+      40%       { transform: translateX(8px); }
+      60%       { transform: translateX(-6px); }
+      80%       { transform: translateX(6px); }
+    }
+
+    .answer-btn.shake {
+      animation: shake 0.35s ease-out;
+    }
+
+    /* Siatka odpowiedzi 2×2 */
+    .answers-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--gap);
+      width: 100%;
+    }
+
+    .answer-btn {
+      min-height: var(--btn-height);
+      background: #111;
+      border: 2px solid #222;
+      border-radius: var(--btn-radius);
+      font-size: var(--btn-font);
+      font-weight: 600;
+      cursor: pointer;
+      color: #f0f0f0;
+      transition: background 0.15s, border-color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .answer-btn:hover         { background: #1a1a1a; border-color: #444; }
+    .answer-btn.correct       { background: #16a34a; border-color: #16a34a; color: #fff; }
+    .answer-btn.wrong         { background: #dc2626; border-color: #dc2626; color: #fff; }
+    .answer-btn:disabled      { pointer-events: none; }
+
+    /* Przełącznik trybu cyfr */
+    .mode-row {
+      display: flex;
+      gap: var(--gap);
+      width: 100%;
+      margin-bottom: calc(var(--gap) * 0.5);
+    }
+
+    .mode-btn {
+      flex: 1;
+      padding: clamp(8px, 1.2vmin, 14px);
+      background: #111;
+      border: 2px solid #222;
+      border-radius: var(--btn-radius);
+      color: #888;
+      font-size: clamp(0.85rem, 1.8vmin, 1.3rem);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .mode-btn.active {
+      background: #1a0a2e;
+      border-color: #bb86fc;
+      color: #bb86fc;
+    }
+
+    /* Przycisk restart */
+    .restart-btn {
+      width: 100%;
+      padding: clamp(10px, 1.5vmin, 18px);
+      background: #111;
+      border: 2px solid #333;
+      border-radius: var(--btn-radius);
+      color: #f0f0f0;
+      font-size: clamp(0.9rem, 1.8vmin, 1.4rem);
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      display: none;
+    }
+    .restart-btn:hover { background: #1a1a1a; }
+    .restart-btn.visible { display: block; }
+    /* Poziom trudności */
+    .diff-row {
+      display: flex;
+      gap: var(--gap);
+      width: 100%;
+    }
+    .diff-btn {
+      flex: 1;
+      padding: clamp(6px, 1vmin, 10px);
+      background: #111;
+      border: 2px solid #222;
+      border-radius: var(--btn-radius);
+      color: #888;
+      font-size: clamp(0.72rem, 1.5vmin, 1.1rem);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .diff-btn[data-diff="easy"].active  { background: #0a2a1a; border-color: #16a34a; color: #4ade80; }
+    .diff-btn[data-diff="hard"].active  { background: #2a0a0a; border-color: #dc2626; color: #f87171; }
+
+    /* Tryb trudny — cyfra zanika */
+    @keyframes num-fade {
+      0%   { opacity: 1; }
+      20%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    .clock .num.fading {
+      visibility: visible !important;
+      animation: num-fade 2s ease-out forwards;
+    }
+    /* Paski postępu */
+    .star-progress {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(5px, 1vmin, 8px);
+      width: 100%;
+      padding: clamp(8px, 1.3vmin, 14px) clamp(10px, 1.5vmin, 16px);
+      background: #0d0d0d;
+      border: 1px solid #222;
+      border-radius: var(--btn-radius);
+    }
+    .spi-row {
+      display: flex;
+      align-items: center;
+      gap: clamp(6px, 1vmin, 10px);
+    }
+    .spi-label {
+      font-size: clamp(0.65rem, 1.3vmin, 0.85rem);
+      color: #888;
+      width: clamp(68px, 11vmin, 90px);
+      flex-shrink: 0;
+    }
+    .spi-track {
+      flex: 1;
+      height: clamp(6px, 1vmin, 8px);
+      background: #222;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .spi-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: #bb86fc;
+      transition: width 0.35s ease;
+      width: 0%;
+    }
+    .spi-fill.spi-streak { background: #f0c040; }
+    .spi-fill.done       { background: #16a34a !important; transition: none; }
+    .spi-count {
+      font-size: clamp(0.65rem, 1.3vmin, 0.85rem);
+      color: #888;
+      min-width: 2.5em;
+      text-align: right;
+      flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Komunikat końcowy */
+    .finish-msg {
+      display: none;
+      text-align: center;
+      font-size: clamp(1rem, 2.2vmin, 1.8rem);
+      color: #bb86fc;
+      font-weight: 700;
+      padding: clamp(8px, 1.5vmin, 16px) 0;
+    }
+    .finish-msg.visible { display: block; }
+
+    /* Toggle trybu wejścia */
+    .input-toggle-row {
+      display: flex;
+      gap: var(--gap);
+      width: 100%;
+    }
+    .input-toggle-btn {
+      flex: 1;
+      padding: clamp(6px, 1vmin, 10px);
+      background: #111;
+      border: 2px solid #222;
+      border-radius: var(--btn-radius);
+      color: #888;
+      font-size: clamp(0.72rem, 1.5vmin, 1.1rem);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .input-toggle-btn.active {
+      background: #0a1a2e;
+      border-color: #2563eb;
+      color: #60a5fa;
+    }
+
+    /* Wyświetlacz cyfr */
+    .digital-input-display {
+      width: 100%;
+      min-height: var(--btn-height);
+      background: #111;
+      border: 2px solid #222;
+      border-radius: var(--btn-radius);
+      font-size: clamp(2rem, 5vmin, 4rem);
+      font-weight: 700;
+      color: #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      letter-spacing: 0.1em;
+      font-family: 'Consolas', 'Courier New', monospace;
+      transition: border-color 0.2s, background 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .digital-input-display.correct { background: #16a34a; border-color: #16a34a; }
+    .digital-input-display.wrong   { background: #dc2626; border-color: #dc2626; }
+    .cursor { animation: blink 1s infinite; }
+    @keyframes blink { 0%,50%{opacity:1} 51%,100%{opacity:0} }
+
+    /* Klawiatura */
+    .keyboard {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(8px, 1.5vmin, 16px);
+      width: 100%;
+    }
+    .keyboard-row {
+      display: flex;
+      gap: clamp(8px, 1.5vmin, 16px);
+      justify-content: center;
+    }
+    .key {
+      flex: 1;
+      min-height: clamp(56px, 9vmin, 100px);
+      background: #111;
+      border: 2px solid #222;
+      border-radius: clamp(10px, 1.5vmin, 16px);
+      font-size: clamp(1.2rem, 2.8vmin, 2.4rem);
+      font-weight: 600;
+      cursor: pointer;
+      color: #f0f0f0;
+      transition: background 0.15s, border-color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .key:hover  { background: #1a1a1a; border-color: #444; }
+    .key:active { background: #222; }
+    .key.key-confirm, .key.key-delete { background: #333; }
+    .key.key-confirm:hover, .key.key-delete:hover { background: #444; }
+
+    /* Ukryj sekcje */
+    .input-section { display: none; }
+    .input-section.active { display: contents; }
+
+    /* Karta pytania — tryb Zaznacz */
+    .question-card {
+      width: 100%;
+      min-height: var(--btn-height);
+      background: #111;
+      border: 2px solid #333;
+      border-radius: var(--btn-radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(2.2rem, 6vmin, 5rem);
+      font-weight: 900;
+      color: #f0f0f0;
+      letter-spacing: 0.05em;
+      user-select: none;
+    }
+    .question-card.pop {
+      animation: q-pop 0.35s ease-out;
+    }
+    @keyframes q-pop {
+      0%   { transform: scale(1); }
+      45%  { transform: scale(1.07); }
+      100% { transform: scale(1); }
+    }
+
+    /* Tryb tap — wyłącz przechwytywanie klików przez SVG overlay */
+    .tap-active .overlay { pointer-events: none !important; }
+    /* Strefy klikalne — nadpisuje pointer-events:none z .numbers */
+    .tap-active .num.zone { pointer-events: auto !important; }
+
+    /* Tryb Zaznacz — strefy na tarczy */
+    .clock .num.zone {
+      pointer-events: auto; /* nadpisuje pointer-events:none z .numbers w clock-styles.css */
+      visibility: visible !important;
+      font-size: 0 !important;
+      width:  clamp(32px, 6vmin, 60px);
+      height: clamp(32px, 6vmin, 60px);
+      border-radius: 50%;
+      background: rgba(255,255,255,0.04);
+      border: 1.5px solid rgba(255,255,255,0.10);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform: translate(-50%, -55%);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s, border-color 0.15s, transform 0.15s;
+    }
+    .clock .num.zone:hover {
+      background: rgba(187,134,252,0.15);
+      border-color: rgba(187,134,252,0.4);
+      transform: translate(-50%, -55%) scale(1.15);
+    }
+    .clock .num.zone.tap-correct {
+      background: rgba(22,163,74,0.3);
+      border-color: #16a34a;
+      animation: zone-pop 0.35s ease-out forwards;
+    }
+    .clock .num.zone.tap-wrong {
+      background: rgba(220,38,38,0.3);
+      border-color: #dc2626;
+      animation: zone-shake 0.35s ease-out;
+    }
+    @keyframes zone-pop {
+      0%   { transform: translate(-50%,-55%) scale(0.8); }
+      60%  { transform: translate(-50%,-55%) scale(1.2); }
+      100% { transform: translate(-50%,-55%) scale(1); }
+    }
+    @keyframes zone-shake {
+      0%,100% { transform: translate(-50%,-55%) translateX(0); }
+      20%     { transform: translate(-48%,-55%); }
+      40%     { transform: translate(-52%,-55%); }
+      60%     { transform: translate(-48%,-55%); }
+      80%     { transform: translate(-52%,-55%); }
+    }
+
+
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <a href="index.html" title="Wróć do menu">
+      <svg class="icon-btn" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"></polyline>
+      </svg>
+    </a>
+    <div class="topbar-right">
+      <button class="help-btn" id="helpBtn">?</button>
+    </div>
+  </div>
+
+  <div class="feedback-bar" id="hintArea">
+    Podświetlona pozycja miga na zegarze — wybierz pasującą cyfrę!
+  </div>
+
+  <div class="result-bar">
+    <div class="feedback" id="feedback"></div>
+  </div>
+
+  <div class="clock-wrap" id="clockContainer"></div>
+
+  <div class="content-area">
+
+    <!-- Poziom trudności -->
+    <div class="diff-row">
+      <button class="diff-btn active" data-diff="easy">🟢 Łatwy</button>
+      <button class="diff-btn"        data-diff="hard">🔴 Trudny</button>
+    </div>
+
+    <!-- Paski postępu -->
+    <div class="star-progress" id="starProgress">
+      <div class="spi-row">
+        <span class="spi-label">Poprawne</span>
+        <div class="spi-track"><div class="spi-fill" id="spCorrect"></div></div>
+        <span class="spi-count" id="spCorrectTxt">0 / 12</span>
+      </div>
+      <div class="spi-row">
+        <span class="spi-label">Seria</span>
+        <div class="spi-track"><div class="spi-fill spi-streak" id="spStreak"></div></div>
+        <span class="spi-count" id="spStreakTxt">0</span>
+      </div>
+    </div>
+
+    <!-- Przełącznik trybu cyfr -->
+    <div class="mode-row">
+      <button class="mode-btn active" id="modeArabic"  data-mode="arabic">123</button>
+      <button class="mode-btn"        id="modeRoman"   data-mode="roman">I II III</button>
+      <button class="mode-btn"        id="modeMinutes" data-mode="minutes">:05…</button>
+      <button class="mode-btn"        id="mode24h"     data-mode="24h">13–24</button>
+    </div>
+
+    <!-- Toggle wybór / klawiatura / zaznacz -->
+    <div class="input-toggle-row">
+      <button class="input-toggle-btn active" id="toggleChoice"   data-input="choice">🔢 Wybór</button>
+      <button class="input-toggle-btn"        id="toggleKeyboard" data-input="keyboard">⌨️ Klawiatura</button>
+      <button class="input-toggle-btn"        id="toggleTap"      data-input="tap">🎯 Zaznacz</button>
+    </div>
+
+    <!-- Sekcja: wybór 4 odpowiedzi -->
+    <div class="input-section active" id="sectionChoice">
+      <div class="answers-grid" id="answersGrid"></div>
+    </div>
+
+    <!-- Sekcja: klawiatura -->
+    <div class="input-section" id="sectionKeyboard">
+      <div class="digital-input-display" id="digitalDisplay"><span class="cursor">_</span></div>
+      <div class="keyboard">
+        <div class="keyboard-row">
+          <button class="key" data-key="1">1</button>
+          <button class="key" data-key="2">2</button>
+          <button class="key" data-key="3">3</button>
+        </div>
+        <div class="keyboard-row">
+          <button class="key" data-key="4">4</button>
+          <button class="key" data-key="5">5</button>
+          <button class="key" data-key="6">6</button>
+        </div>
+        <div class="keyboard-row">
+          <button class="key" data-key="7">7</button>
+          <button class="key" data-key="8">8</button>
+          <button class="key" data-key="9">9</button>
+        </div>
+        <div class="keyboard-row">
+          <button class="key key-delete" data-key="delete">⌫</button>
+          <button class="key" data-key="0">0</button>
+          <button class="key key-confirm" data-key="ok">OK</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sekcja: zaznacz na tarczy -->
+    <div class="input-section" id="sectionTap">
+      <div class="question-card" id="questionCard">—</div>
+    </div>
+
+    <!-- Komunikat końcowy -->
+    <div class="finish-msg" id="finishMsg">🎉 Uzupełniłeś cały zegar!</div>
+
+    <!-- Restart -->
+    <button class="restart-btn" id="restartBtn">↺ Zagraj ponownie</button>
+
+  </div>
+
+  <script src="clock-renderer.js"></script>
+  <script>
+    // ===== CONFIG =====
+    const ROMAN = {
+      1:'I', 2:'II', 3:'III', 4:'IV', 5:'V', 6:'VI',
+      7:'VII', 8:'VIII', 9:'IX', 10:'X', 11:'XI', 12:'XII'
+    };
+
+    // 24h etykieta dla pozycji: pos 12 → 24, pos 1–11 → 13–23
+    function h24label(n) { return n === 12 ? 24 : n + 12; }
+
+    // Minutowa etykieta dla pozycji
+    function minLabel(n) { return n === 12 ? 0 : n * 5; }
+
+    // Opisy słowne pozycji — godziny
+    const POSITION_DESC = {
+      12: 'godzina 12 — na samej górze',
+      1:  'godzina 1 — lekko w prawo od góry',
+      2:  'godzina 2 — góra-prawo',
+      3:  'godzina 3 — po prawej',
+      4:  'godzina 4 — dół-prawo',
+      5:  'godzina 5 — lekko w lewo od dołu',
+      6:  'godzina 6 — na samym dole',
+      7:  'godzina 7 — dół-lewo',
+      8:  'godzina 8 — lekko w prawo od lewej',
+      9:  'godzina 9 — po lewej',
+      10: 'godzina 10 — góra-lewo',
+      11: 'godzina 11 — lekko w prawo od góry-lewo',
+    };
+
+    // Opisy słowne pozycji — minuty
+    const POSITION_DESC_MIN = {
+      12: '0 minut — na samej górze',
+      1:  '5 minut — lekko w prawo od góry',
+      2:  '10 minut — góra-prawo',
+      3:  '15 minut — po prawej',
+      4:  '20 minut — dół-prawo',
+      5:  '25 minut — lekko w lewo od dołu',
+      6:  '30 minut — na samym dole',
+      7:  '35 minut — dół-lewo',
+      8:  '40 minut — lekko w prawo od lewej',
+      9:  '45 minut — po lewej',
+      10: '50 minut — góra-lewo',
+      11: '55 minut — lekko w prawo od góry-lewo',
+    };
+
+    // ===== STATE =====
+    let mode          = 'arabic';   // 'arabic' | 'roman' | 'minutes' | '24h'
+    let inputMode     = 'choice';   // 'choice' | 'keyboard' | 'tap'
+    let difficulty    = 'easy';     // 'easy' | 'hard'
+    let remaining     = [];         // pozycje jeszcze nieodgadnięte
+    let currentPos    = null;       // aktualnie pytana pozycja (1-12)
+    let score         = 0;
+    let streak        = 0;
+    let locked        = false;      // blokada podczas animacji feedbacku
+    let kbInput       = '';         // bufor klawiatury
+
+    // ===== DOM =====
+    const feedbackEl      = document.getElementById('feedback');
+    const hintArea        = document.getElementById('hintArea');
+    const spCorrectEl     = document.getElementById('spCorrect');
+    const spCorrectTxtEl  = document.getElementById('spCorrectTxt');
+    const spStreakEl      = document.getElementById('spStreak');
+    const spStreakTxtEl   = document.getElementById('spStreakTxt');
+    const answersGrid     = document.getElementById('answersGrid');
+    const digitalDisplay  = document.getElementById('digitalDisplay');
+    const sectionChoice   = document.getElementById('sectionChoice');
+    const sectionKeyboard = document.getElementById('sectionKeyboard');
+    const sectionTap      = document.getElementById('sectionTap');
+    const questionCard    = document.getElementById('questionCard');
+    const finishMsg       = document.getElementById('finishMsg');
+    const restartBtn      = document.getElementById('restartBtn');
+
+    // ===== CLOCK SETUP =====
+    const clockContainer = document.getElementById('clockContainer');
+    const clock = new ClockRenderer(clockContainer, {
+      size: 'normal',
+      interactive: false,
+      showBrand: true,
+      showDigital: false,
+      showDate: false,
+      showSecondHand: false,
+      showBgControls: false,
+      handColor: 'white',
+    });
+    clock.setBackground('solid');
+    clock.setTime(10, 10); // klasyczna pozycja wskazówek "dziesiąta dziesiąta"
+
+    // Ukryj wszystkie cyfry na starcie
+    clock.setNumberStyle('none');
+
+    // ===== HELPERS =====
+    function getNumEl(pos) {
+      return clockContainer.querySelector(`.num.n${pos}`);
+    }
+
+    function displayLabel(n) {
+      if (mode === 'roman')   return ROMAN[n];
+      if (mode === 'minutes') return String(minLabel(n));
+      if (mode === '24h')     return String(h24label(n));
+      return String(n);
+    }
+
+    function shuffle(arr) {
+      // Fisher-Yates
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function generateDistractors(correct) {
+      // W trybie 24h i minut pula dystraktorów jest ze wartości label,
+      // ale musimy zwrócić pozycje (1-12) a nie wartości
+      const pool = [1,2,3,4,5,6,7,8,9,10,11,12].filter(n => n !== correct);
+      return shuffle(pool).slice(0, 3);
+    }
+
+    // ===== GAME FLOW =====
+    function startGame() {
+      score     = 0;
+      streak    = 0;
+      remaining = shuffle([1,2,3,4,5,6,7,8,9,10,11,12]);
+      locked    = false;
+
+      // Wyczyść wszystkie pozycje do ukrytych
+      clock.setNumberStyle('none');
+      [1,2,3,4,5,6,7,8,9,10,11,12].forEach(n => {
+        const el = getNumEl(n);
+        if (!el) return;
+        el.classList.remove('placed', 'target', 'zone', 'tap-correct', 'tap-wrong', 'fading');
+        el.style.visibility = '';
+        el.style.fontSize   = '';
+        el.textContent = '';
+      });
+
+      if (inputMode === 'tap') {
+        setupTapZones();
+        clockContainer.classList.add('tap-active');
+      } else {
+        clockContainer.classList.remove('tap-active');
+      }
+
+      feedbackEl.textContent = '';
+      feedbackEl.className   = 'feedback';
+      updateBars();
+      finishMsg.classList.remove('visible');
+      restartBtn.classList.remove('visible');
+
+      nextQuestion();
+    }
+
+    function nextQuestion() {
+      if (remaining.length === 0) {
+        finishRound();
+        return;
+      }
+
+      currentPos = remaining.shift();
+      locked     = false;
+      kbInput    = '';
+
+      // W trybie trudnym wyczyść zanikającą cyfrę z poprzedniego pytania
+      if (difficulty === 'hard') {
+        [1,2,3,4,5,6,7,8,9,10,11,12].forEach(n => {
+          const el = getNumEl(n);
+          if (el && el.classList.contains('fading')) {
+            el.classList.remove('fading');
+            el.style.visibility = '';
+            el.textContent = '';
+            // przywróć strefę w trybie tap jeśli pozycja jeszcze nie została umieszczona
+            // (fading to jednorazowe — cyfra była już poprawnie odgadnięta, nie przywracamy)
+          }
+        });
+      }
+
+      // Podświetl target TYLKO w trybach choice i keyboard
+      [1,2,3,4,5,6,7,8,9,10,11,12].forEach(n => {
+        const el = getNumEl(n);
+        if (el) el.classList.remove('target');
+      });
+
+      if (inputMode === 'tap') {
+        // pokaż kartę z pytaniem
+        questionCard.textContent = displayLabel(currentPos);
+        questionCard.classList.remove('pop');
+        void questionCard.offsetWidth;
+        questionCard.classList.add('pop');
+      } else {
+        const targetEl = getNumEl(currentPos);
+        if (targetEl) {
+          targetEl.classList.add('target');
+          targetEl.textContent = ''; // ukryj cyfrę pod kółkiem
+        }
+      }
+
+      if (inputMode === 'choice') {
+        // Wygeneruj opcje odpowiedzi
+        const choices = shuffle([currentPos, ...generateDistractors(currentPos)]);
+        answersGrid.innerHTML = '';
+        choices.forEach(n => {
+          const btn = document.createElement('button');
+          btn.className = 'answer-btn';
+          btn.textContent = displayLabel(n);
+          btn.dataset.value = n;
+          btn.addEventListener('click', () => handleAnswer(n, btn));
+          answersGrid.appendChild(btn);
+        });
+      } else if (inputMode === 'keyboard') {
+        updateKbDisplay();
+      }
+      // tryb 'tap' — gracz klika strefę na tarczy, nic dodatkowego nie trzeba
+    }
+
+    function updateBars() {
+      const pct = (score / 12) * 100;
+      spCorrectEl.style.width     = pct + '%';
+      spCorrectTxtEl.textContent  = `${score} / 12`;
+      if (score === 12) spCorrectEl.classList.add('done');
+
+      const sPct = Math.min((streak / 5) * 100, 100);
+      spStreakEl.style.width    = sPct + '%';
+      spStreakTxtEl.textContent = String(streak);
+    }
+
+    function handleAnswer(n, btn) {
+      if (locked) return;
+      locked = true;
+
+      const allBtns = answersGrid.querySelectorAll('.answer-btn');
+
+      if (n === currentPos) {
+        // Poprawna odpowiedź
+        btn.classList.add('correct');
+        feedbackEl.textContent = '✓ Świetnie!';
+        feedbackEl.className   = 'feedback ok';
+        score++;
+        streak++;
+        updateBars();
+
+        // Pokaż cyfrę na zegarze
+        placeDigit(currentPos);
+
+        setTimeout(nextQuestion, 700);
+      } else {
+        // Zła odpowiedź
+        btn.classList.add('wrong');
+        btn.classList.add('shake');
+        feedbackEl.textContent = '✗ Nie tutaj!';
+        feedbackEl.className   = 'feedback bad';
+        streak = 0;
+        updateBars();
+
+        // Pokaż gdzie była poprawna odpowiedź
+        allBtns.forEach(b => {
+          if (parseInt(b.dataset.value) === currentPos) b.classList.add('correct');
+        });
+
+        setTimeout(() => {
+          btn.classList.remove('shake');
+          locked = false;
+
+          // Przywróć przyciski (usuń kolory poza correct)
+          allBtns.forEach(b => {
+            if (parseInt(b.dataset.value) !== currentPos) {
+              b.classList.remove('wrong', 'correct');
+            }
+          });
+        }, 800);
+      }
+    }
+
+    function finishRound() {
+      answersGrid.innerHTML = '';
+      kbInput = '';
+      updateKbDisplay();
+
+      feedbackEl.textContent = '';
+      feedbackEl.className   = 'feedback';
+
+      // Usuń pulsowanie z wszystkich
+      [1,2,3,4,5,6,7,8,9,10,11,12].forEach(n => {
+        const el = getNumEl(n);
+        if (el) el.classList.remove('target');
+      });
+
+      const perfect = score === 12;
+      finishMsg.textContent = perfect
+        ? '🎉 Zegar uzupełniony bezbłędnie!'
+        : `✅ Gotowe! Poprawne: ${score} / 12`;
+      finishMsg.classList.add('visible');
+      restartBtn.classList.add('visible');
+    }
+
+    // ===== PLACE DIGIT HELPER =====
+    function placeDigit(pos) {
+      const el = getNumEl(pos);
+      if (!el) return;
+      el.classList.remove('target', 'zone', 'tap-correct');
+      el.textContent = displayLabel(pos);
+      el.style.visibility = 'visible';
+      el.style.fontSize   = '';
+      if (difficulty === 'easy') {
+        el.classList.add('placed');
+      } else {
+        // tryb trudny: cyfra zanika
+        el.classList.remove('placed');
+        void el.offsetWidth; // restart animacji
+        el.classList.add('fading');
+      }
+    }
+
+    // ===== TAP ZONES =====
+    function setupTapZones() {
+      [1,2,3,4,5,6,7,8,9,10,11,12].forEach(n => {
+        const el = getNumEl(n);
+        if (!el) return;
+        el.classList.add('zone');
+        el.textContent = '';
+        // wymieniamy handler żeby nie duplikować
+        const handler = () => handleZoneTap(n, el);
+        el.removeEventListener('click', el._tapHandler);
+        el._tapHandler = handler;
+        el.addEventListener('click', handler);
+      });
+    }
+
+    function handleZoneTap(n, el) {
+      if (locked) return;
+      if (el.classList.contains('placed') || el.classList.contains('fading')) return;
+
+      if (n === currentPos) {
+        locked = true;
+        el.classList.add('tap-correct');
+        feedbackEl.textContent = '✓ Świetnie!';
+        feedbackEl.className   = 'feedback ok';
+        score++;
+        streak++;
+        updateBars();
+        setTimeout(() => {
+          placeDigit(n);
+          nextQuestion();
+        }, 500);
+      } else {
+        el.classList.add('tap-wrong');
+        feedbackEl.textContent = '✗ Nie tutaj!';
+        feedbackEl.className   = 'feedback bad';
+        streak = 0;
+        updateBars();
+        setTimeout(() => {
+          el.classList.remove('tap-wrong');
+          feedbackEl.textContent = '';
+          feedbackEl.className   = 'feedback';
+        }, 600);
+      }
+    }
+
+    // ===== KEYBOARD LOGIC =====
+    function updateKbDisplay() {
+      if (!digitalDisplay) return;
+      digitalDisplay.className = 'digital-input-display';
+      digitalDisplay.textContent = kbInput.length ? kbInput : '';
+      if (!kbInput.length) {
+        digitalDisplay.innerHTML = '<span class="cursor">_</span>';
+      }
+    }
+
+    function handleKeyPress(key) {
+      if (locked) return;
+      if (key === 'delete') {
+        kbInput = kbInput.slice(0, -1);
+        updateKbDisplay();
+        return;
+      }
+      if (key === 'ok') {
+        if (!kbInput.length) return;
+        submitKbAnswer();
+        return;
+      }
+      // max 2 cyfry (wartości 0-59 lub 1-24)
+      if (kbInput.length >= 2) return;
+      kbInput += key;
+      updateKbDisplay();
+    }
+
+    function submitKbAnswer() {
+      const typed = parseInt(kbInput, 10);
+      const correct = parseInt(displayLabel(currentPos), 10);
+
+      if (typed === correct) {
+        digitalDisplay.className = 'digital-input-display correct';
+        feedbackEl.textContent = '✓ Świetnie!';
+        feedbackEl.className   = 'feedback ok';
+        score++;
+        streak++;
+        updateBars();
+        locked = true;
+
+        const targetEl = getNumEl(currentPos);
+        if (targetEl) {
+          targetEl.classList.remove('target');
+          targetEl.textContent = displayLabel(currentPos);
+          targetEl.style.visibility = 'visible';
+          targetEl.classList.add('placed');
+        }
+        setTimeout(nextQuestion, 700);
+      } else {
+        digitalDisplay.className = 'digital-input-display wrong';
+        feedbackEl.textContent = `✗ To ${typed}, nie ${displayLabel(currentPos)}`;
+        feedbackEl.className   = 'feedback bad';
+        streak = 0;
+        updateBars();
+        kbInput = '';
+        setTimeout(() => {
+          digitalDisplay.className = 'digital-input-display';
+          digitalDisplay.innerHTML = '<span class="cursor">_</span>';
+          feedbackEl.textContent = '';
+          feedbackEl.className   = 'feedback';
+        }, 900);
+      }
+    }
+
+    // Kliknięcia klawiszy
+    document.querySelectorAll('.key').forEach(k => {
+      k.addEventListener('click', () => handleKeyPress(k.dataset.key));
+      k.style.webkitTapHighlightColor = 'transparent';
+    });
+
+    // Fizyczna klawiatura
+    document.addEventListener('keydown', e => {
+      if (inputMode !== 'keyboard') return;
+      if (e.key >= '0' && e.key <= '9') handleKeyPress(e.key);
+      else if (e.key === 'Backspace')    handleKeyPress('delete');
+      else if (e.key === 'Enter')        handleKeyPress('ok');
+    });
+
+    // ===== INPUT MODE TOGGLE =====
+    document.querySelectorAll('.input-toggle-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        inputMode = btn.dataset.input;
+        document.querySelectorAll('.input-toggle-btn').forEach(b =>
+          b.classList.toggle('active', b === btn)
+        );
+        sectionChoice.classList.toggle('active',   inputMode === 'choice');
+        sectionKeyboard.classList.toggle('active', inputMode === 'keyboard');
+        sectionTap.classList.toggle('active',      inputMode === 'tap');
+        startGame();
+      });
+    });
+
+    // ===== DIFFICULTY TOGGLE =====
+    document.querySelectorAll('.diff-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        difficulty = btn.dataset.diff;
+        document.querySelectorAll('.diff-btn').forEach(b =>
+          b.classList.toggle('active', b === btn)
+        );
+        startGame();
+      });
+    });
+
+    // ===== MODE SWITCHER =====
+    const modeBtns = document.querySelectorAll('.mode-btn');
+    modeBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        mode = btn.dataset.mode;
+        modeBtns.forEach(b => b.classList.toggle('active', b === btn));
+        startGame();
+      });
+    });
+
+    // ===== RESTART =====
+    restartBtn.addEventListener('click', startGame);
+
+    // ===== HELP =====
+    document.getElementById('helpBtn').addEventListener('click', () => {
+      hintArea.classList.toggle('active');
+    });
+
+    // ===== START =====
+    startGame();
+  </script>
+  <script src="transitions.js"></script>
+</body>
+</html>
