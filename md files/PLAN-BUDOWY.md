@@ -518,6 +518,39 @@ po ukończeniu sesji:
 
 ---
 
+## FAZA 8: Integracja Demo-Gier
+
+> Prototypy z `page draft/` (lub `app/demo-*.html`) zintegrowane z systemem progresu i udostępnione w Szybkiej Grze.
+
+### Kroki:
+
+- [x] **8.1** `roman-pairs.html` (dawniej `demo-roman.html`) — mini-gra dopasowywania par arabsko-rzymskich:
+  - 10 progresywnych poziomów z pedagogicznymi podpowiedziami przy awansie
+  - Progres per profil: klucz `mistrzCzasu_romanLevel_[profileId]` w localStorage
+  - `reportQuickGameResult()` przy każdej próbie dopasowania pary (limit 20/dzień, +5 Sekund)
+  - FAB+Toast zamiast help-btn; back link → `szybka-gra.html`
+  - Dodana jako 5. opcja w `szybka-gra.html` (wyśrodkowana ostatnia karta)
+- [ ] **8.2** `digit-placer.html` (dawniej `demo-match.html`) — uzupełnianie cyfr na tarczy zegara:
+  - 3 tryby wejścia: Wybór 4 opcji / Klawiatura / Zaznacz na tarczy
+  - 4 tryby etykiet: arabskie / rzymskie / minuty / 24h
+  - 2 poziomy trudności (cyfry zostają vs. zanikają)
+  - Integracja z `game-state.js` i `reportQuickGameResult()`
+  - Dodanie jako 6. opcja w `szybka-gra.html`
+
+### Pliki:
+- Nowy: `roman-pairs.html` (produkcyjna wersja `demo-roman.html`)
+- Do utworzenia: `digit-placer.html` (produkcyjna wersja `demo-match.html`)
+- Modyfikacja: `szybka-gra.html`
+
+### Weryfikacja:
+- [x] Szybka Gra → karta "Cyfry Rzymskie" → `roman-pairs.html`
+- [x] Progres levelu per profil (nie globalny)
+- [x] `reportQuickGameResult()` nalicza Sekundy
+- [x] FAB+Toast działa z podpowiedzią
+- [ ] `digit-placer.html` dostępna z Szybkiej Gry
+
+---
+
 ## FAZA 7: Spaced Repetition i Wyzwanie Dnia
 
 ### Kroki:
@@ -583,9 +616,8 @@ FAZA 1 (profile + dane) ──► FAZA 2 (dashboard) ──► FAZA 3 (integracj
 | 4. Garderoba | ✅ Ukończona | 27.04.2026 | garderoba.html; purchaseItem/equipItem; podgląd live ClockRenderer; 4+3 przedmioty |
 | 5. Streak/Kalendarz | ✅ Ukończona | 27.04.2026 | updateStreak/isRusty; kalendarz 28 dni; anty-rdza na wszystkich tarczach |
 | 6. Odznaki | ✅ Ukończona | 06.04.2026 | ACHIEVEMENTS ×9; overlay kolejkowy; trofea.html; per profil |
-| 7. Spaced Repetition | ⬜ Nie rozpoczęta | — | — |
-
+| 7. Spaced Repetition | ⬜ Nie rozpoczęta | — | — || 8. Integracja Demo-Gier | 🔨 W trakcie | — | roman-pairs.html ✓; digit-placer.html do zrobienia |
 ---
 
 *Plan utworzony: 29.03.2026*
-*Ostatnia aktualizacja: 10.04.2026 — 4.6 + 4.7 ukończone: tryby gry czytają styl z wardrobe; sekcje Tła/Wskazówki usunięte z ustawienia.html*
+*Ostatnia aktualizacja: 13.04.2026 — Faza 8.1: roman-pairs.html zintegrowana z game-state.js i dodana do szybka-gra.html*

@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyfry Rzymskie — Mistrz Czasu</title>
+  <link rel="stylesheet" href="layout.css" />
+  <style>
+    /* ===== ROMAN-PAIRS — page-specific styles ===== */
+
+    /* Feedback-bar nieużywana — zastąpiona star-progress panelem */
+    .feedback-bar { display: none !important; }
+
+    /* Content area: wypełnia dostępną przestrzeń między paskiem a dołem */
+    .content-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      width: min(560px, 92vw);
+      margin-top: 0 !important;
+      gap: var(--gap);
+    }
+
+    /* Siatka par: dwie kolumny */
+    .pairs-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(28px, 7vmin, 64px);
+      width: min(560px, 92vw);
+    }
+
+    .pairs-col {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(6px, 1.5vmin, 12px);
+    }
+
+    .pairs-col-label {
+      text-align: center;
+      font-size: clamp(0.7rem, 1.6vmin, 1rem);
+      color: #888;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: clamp(2px, 0.5vmin, 6px);
+    }
+
+    /* Karta w każdej kolumnie */
+    .pair-card {
+      background: #111;
+      border: 2px solid #222;
+      border-radius: var(--btn-radius);
+      color: #f0f0f0;
+      font-size: clamp(1.1rem, 3vmin, 2rem);
+      font-weight: 700;
+      height: clamp(48px, 7vmin, 80px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s, opacity 0.3s;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .pair-card:hover:not(.matched):not(.selected) {
+      background: #1a1a1a;
+      border-color: #333;
+    }
+
+    .pair-card.selected {
+      border-color: #bb86fc;
+      background: rgba(187, 134, 252, 0.15);
+      transform: scale(1.04);
+    }
+
+    .pair-card.matched {
+      border-color: #16a34a;
+      background: rgba(22, 163, 74, 0.12);
+      color: #16a34a;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .pair-card.wrong {
+      border-color: #dc2626;
+      background: rgba(220, 38, 38, 0.15);
+      animation: shake-card 0.35s ease-out;
+    }
+
+    @keyframes shake-card {
+      0%, 100% { transform: translateX(0); }
+      20%       { transform: translateX(-7px); }
+      50%       { transform: translateX(7px); }
+      80%       { transform: translateX(-4px); }
+    }
+
+    @keyframes pop-match {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.12); }
+      100% { transform: scale(1); }
+    }
+
+    .pair-card.pop-match {
+      animation: pop-match 0.3s ease-out forwards;
+    }
+
+    /* ===== Overlay awansu i ukończenia ===== */
+    .finish-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: clamp(16px, 3vmin, 32px);
+      padding: clamp(16px, 4vmin, 40px);
+    }
+
+    .finish-overlay.open { display: flex; }
+
+    .finish-box {
+      background: #111;
+      border: 2px solid #333;
+      border-radius: var(--btn-radius);
+      padding: clamp(24px, 5vmin, 56px) clamp(20px, 6vmin, 64px);
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: clamp(12px, 2.5vmin, 24px);
+      width: min(440px, 90vw);
+    }
+
+    .finish-emoji { font-size: clamp(2.4rem, 8vmin, 5rem); }
+
+    .finish-title {
+      font-size: clamp(1.2rem, 3.5vmin, 2.2rem);
+      font-weight: 700;
+      color: #f0f0f0;
+    }
+
+    .finish-sub {
+      font-size: clamp(0.85rem, 2vmin, 1.3rem);
+      color: #888;
+    }
+
+    .levelup-tip {
+      font-size: clamp(0.85rem, 1.8vmin, 1.1rem);
+      color: #bb86fc;
+      background: rgba(187, 134, 252, 0.08);
+      border: 1px solid rgba(187, 134, 252, 0.25);
+      border-radius: var(--btn-radius);
+      padding: clamp(10px, 2vmin, 18px) clamp(12px, 2.5vmin, 22px);
+      line-height: 1.5;
+      text-align: left;
+    }
+
+    .btn-next {
+      background: rgba(187, 134, 252, 0.15);
+      border: 2px solid #bb86fc;
+      border-radius: var(--btn-radius);
+      color: #f0f0f0;
+      font-size: var(--btn-font);
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0 clamp(24px, 5vmin, 48px);
+      height: var(--btn-height);
+      transition: background 0.2s, border-color 0.2s;
+      -webkit-tap-highlight-color: transparent;
+      width: 100%;
+    }
+
+    .btn-next:hover { background: rgba(187, 134, 252, 0.28); }
+
+    .btn-play-again {
+      background: #111;
+      border: 2px solid #333;
+      border-radius: var(--btn-radius);
+      color: #f0f0f0;
+      font-size: var(--btn-font);
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0 clamp(24px, 5vmin, 48px);
+      height: var(--btn-height);
+      transition: background 0.2s, border-color 0.2s;
+      -webkit-tap-highlight-color: transparent;
+      width: 100%;
+    }
+
+    .btn-play-again:hover { background: #1a1a1a; border-color: #bb86fc; }
+
+    /* ===== Pasek postępu (wzorzec star-progress z sekcji 16) ===== */
+    .star-progress {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(5px, 1vmin, 8px);
+      width: min(560px, 92vw);
+      padding: clamp(8px, 1.3vmin, 14px) clamp(10px, 1.5vmin, 16px);
+      background: #0d0d0d;
+      border: 1px solid #222;
+      border-radius: var(--btn-radius);
+    }
+
+    .spi-row {
+      display: flex;
+      align-items: center;
+      gap: clamp(6px, 1vmin, 10px);
+    }
+
+    .spi-label {
+      font-size: clamp(0.65rem, 1.3vmin, 0.85rem);
+      color: #888;
+      width: clamp(68px, 11vmin, 90px);
+      flex-shrink: 0;
+    }
+
+    .spi-track {
+      flex: 1;
+      height: clamp(6px, 1vmin, 8px);
+      background: #222;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .spi-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: #bb86fc;
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+
+    .spi-fill.done { background: #16a34a !important; transition: none; }
+
+    .spi-count {
+      font-size: clamp(0.65rem, 1.3vmin, 0.85rem);
+      color: #888;
+      min-width: 2.5em;
+      text-align: right;
+      flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Wiersz: etykieta poziomu + komunikat feedbacku */
+    .level-badge {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: clamp(6px, 1vmin, 10px);
+      margin-bottom: clamp(2px, 0.5vmin, 4px);
+    }
+
+    .level-badge-name {
+      font-size: clamp(0.75rem, 1.5vmin, 0.95rem);
+      color: #bb86fc;
+      font-weight: 600;
+    }
+
+    .level-badge-num {
+      font-size: clamp(0.65rem, 1.3vmin, 0.82rem);
+      color: #555;
+    }
+
+    .result-bar { justify-content: center; }
+
+    /* ===== FAB + Toast (wzorzec z sekcji 14 page-standards) ===== */
+    .fab-hint {
+      position: fixed;
+      bottom: 24px; right: 20px;
+      z-index: 300;
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: #111;
+      border: 2px solid #333;
+      color: #555;
+      font-size: 1.3rem; font-weight: 700;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: color 0.2s, border-color 0.2s, transform 0.2s;
+      -webkit-tap-highlight-color: transparent;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+    }
+    .fab-hint:hover { color: #f0f0f0; border-color: #555; }
+    .fab-hint.active { border-color: var(--accent-color); color: var(--accent-color); transform: rotate(15deg); }
+
+    .hint-toast {
+      position: fixed;
+      bottom: 84px; left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      z-index: 299;
+      width: min(360px, calc(100vw - 40px));
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 16px;
+      padding: 14px 18px;
+      display: flex; align-items: flex-start; gap: 12px;
+      overflow: hidden;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.22s ease, transform 0.22s ease;
+    }
+    .hint-toast.visible { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+    .hint-toast-icon  { font-size: 1.2rem; flex-shrink: 0; margin-top: 2px; }
+    .hint-toast-body  { flex: 1; }
+    .hint-toast-title { font-size: 0.72rem; font-weight: 700; color: var(--accent-color); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .hint-toast-msg   { font-size: 0.88rem; color: #ccc; line-height: 1.5; }
+    .hint-toast-bar   {
+      position: absolute; bottom: 0; left: 0;
+      height: 3px; background: var(--accent-color); border-radius: 0 0 16px 16px;
+      width: 100%; transform-origin: left; transform: scaleX(0);
+    }
+    .hint-toast.auto-close .hint-toast-bar {
+      transform: scaleX(1);
+      transition: transform 10s linear;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- A. Topbar -->
+  <div class="topbar">
+    <a href="szybka-gra.html" title="Wróć do Szybkiej Gry">
+      <svg class="icon-btn" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"></polyline>
+      </svg>
+    </a>
+    <div class="topbar-right"></div>
+  </div>
+
+  <!-- D. Pasek postępu — bezpośrednio pod topbarem -->
+  <div class="star-progress">
+    <div class="level-badge">
+      <span class="level-badge-name" id="levelName">Poziom 1 — Podstawa</span>
+      <span class="level-badge-num" id="levelNum">1 / 10</span>
+    </div>
+    <div class="spi-row" style="min-height: clamp(18px, 2.5vmin, 28px)">
+      <span class="feedback" id="feedback" style="min-height: 0; font-size: clamp(0.75rem, 1.6vmin, 1rem)"></span>
+    </div>
+    <div class="spi-row">
+      <span class="spi-label">Dopasowane</span>
+      <div class="spi-track"><div class="spi-fill" id="spMatched"></div></div>
+      <span class="spi-count" id="spMatchedTxt">0/3</span>
+    </div>
+    <div class="spi-row">
+      <span class="spi-label">Dokładność</span>
+      <div class="spi-track"><div class="spi-fill" id="spAccuracy" style="background: #f0c040"></div></div>
+      <span class="spi-count" id="spAccuracyTxt">—</span>
+    </div>
+  </div>
+
+  <!-- E. Główna zawartość -->
+  <div class="content-area">
+    <div class="pairs-grid">
+      <div class="pairs-col" id="arabicDisplayCol">
+        <div class="pairs-col-label">Arabskie</div>
+        <!-- wypełniane przez JS -->
+      </div>
+      <div class="pairs-col" id="romanDisplayCol">
+        <div class="pairs-col-label">Rzymskie</div>
+        <!-- wypełniane przez JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- F. Overlay: awans na nowy level -->
+  <div class="finish-overlay" id="levelUpOverlay">
+    <div class="finish-box">
+      <div class="finish-emoji" id="luEmoji">⭐</div>
+      <div class="finish-title" id="luTitle">Level 2!</div>
+      <div class="finish-sub" id="luSub"></div>
+      <div class="levelup-tip" id="luTip" style="display: none"></div>
+      <button class="btn-next" id="luNextBtn">Dalej ▶</button>
+    </div>
+  </div>
+
+  <!-- G. Overlay: ukończono wszystkie levele -->
+  <div class="finish-overlay" id="finishOverlay">
+    <div class="finish-box">
+      <div class="finish-emoji">🏆</div>
+      <div class="finish-title">Mistrz Cyfr Rzymskich!</div>
+      <div class="finish-sub" id="finishSub"></div>
+      <button class="btn-play-again" id="playAgainBtn">Od początku</button>
+    </div>
+  </div>
+
+  <!-- FAB ? -->
+  <button class="fab-hint" id="fabHint" onclick="toggleHint()">?</button>
+
+  <!-- Hint Toast -->
+  <div class="hint-toast" id="hintToast">
+    <span class="hint-toast-icon">💡</span>
+    <div class="hint-toast-body">
+      <div class="hint-toast-title">Jak to działa?</div>
+      <div class="hint-toast-msg">Kliknij jedną liczbę po lewej i jedną po prawej — jeśli to para, znikają! Bezbłędna runda = awans na wyższy poziom. Błąd = spróbuj jeszcze raz.</div>
+    </div>
+    <div class="hint-toast-bar" id="hintBar"></div>
+  </div>
+
+  <script src="game-state.js"></script>
+  <script>
+    // ===== DANE =====
+
+    const ROMAN = {
+      1: 'I',   2: 'II',   3: 'III',  4: 'IV',
+      5: 'V',   6: 'VI',  7: 'VII', 8: 'VIII',
+      9: 'IX', 10: 'X',  11: 'XI', 12: 'XII',
+    };
+
+    const LEVELS = [
+      { id: 1, label: 'Podstawa',         pool: [1, 2, 3],                         tip: null },
+      { id: 2, label: 'Nowy symbol',       pool: [1, 2, 3, 5],                      tip: 'Poznałeś nowy symbol: V = 5.' },
+      { id: 3, label: 'Zasada dodawania',  pool: [1, 2, 3, 5, 6, 7, 8],            tip: 'Symbol po prawej stronie V dodaje się: VI = 6, VII = 7, VIII = 8.' },
+      { id: 4, label: 'Dziesiątka',        pool: [1, 2, 3, 10],                     tip: 'Nowy symbol: X = 10.' },
+      { id: 5, label: 'Dodawanie do X',    pool: [1, 2, 3, 10, 11, 12],            tip: 'XI = 11, XII = 12 — symbol po prawej dodaje się do X.' },
+      { id: 6, label: 'Pełna baza',        pool: [1, 2, 3, 5, 6, 7, 8, 10, 11, 12], tip: null },
+      { id: 7, label: 'Odkrycie IV',       pool: [1, 2, 3, 4, 5],                  tip: '💡 Kiedy mała kreska stoi PRZED większą — ODEJMUJEMY ją! IV = 5 − 1 = 4.' },
+      { id: 8, label: 'Analogia IX',       pool: [1, 2, 3, 9, 10],                 tip: 'To samo co IV, ale dla dziesiątki: IX = 10 − 1 = 9.' },
+      { id: 9, label: 'Kontrast',          pool: [1, 2, 3, 4, 5, 9, 10],           tip: null },
+      { id: 10, label: 'Mistrz',           pool: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], tip: null },
+    ];
+
+    // ===== PROFIL I KLUCZ STORAGE =====
+
+    /** Klucz przechowujący numer aktualnego poziomu per profil. */
+    function getRomanLevelKey() {
+      const profile = (typeof getActiveProfile === 'function') ? getActiveProfile() : null;
+      return profile ? `mistrzCzasu_romanLevel_${profile.id}` : 'mistrzCzasu_romanLevel_guest';
+    }
+
+    // ===== STAN =====
+
+    let currentLevel  = Math.min(
+      parseInt(localStorage.getItem(getRomanLevelKey()) || '0', 10),
+      LEVELS.length - 1
+    );
+    let selectedArabic = null;  // karta z lewej kolumny (wartość arabska)
+    let selectedRoman  = null;  // karta z prawej kolumny (wartość arabska jako klucz)
+    let matchedCount   = 0;
+    let attempts       = 0;
+    let locked         = false;
+    let perfectRound   = true;
+
+    // ===== DOM =====
+
+    const arabicDisplayCol = document.getElementById('arabicDisplayCol');
+    const romanDisplayCol  = document.getElementById('romanDisplayCol');
+    const feedbackEl       = document.getElementById('feedback');
+    const finishOverlay    = document.getElementById('finishOverlay');
+    const finishSub        = document.getElementById('finishSub');
+    const levelUpOverlay   = document.getElementById('levelUpOverlay');
+    const luEmoji          = document.getElementById('luEmoji');
+    const luTitle          = document.getElementById('luTitle');
+    const luSub            = document.getElementById('luSub');
+    const luTip            = document.getElementById('luTip');
+    const spMatched        = document.getElementById('spMatched');
+    const spMatchedTxt     = document.getElementById('spMatchedTxt');
+    const spAccuracy       = document.getElementById('spAccuracy');
+    const spAccuracyTxt    = document.getElementById('spAccuracyTxt');
+    const levelName        = document.getElementById('levelName');
+    const levelNum         = document.getElementById('levelNum');
+
+    // ===== HELPERS =====
+
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    // ===== PASEK POSTĘPU =====
+
+    function updateProgressBar() {
+      const goal    = LEVELS[currentLevel].pool.length;
+      const matchPct = (matchedCount / goal) * 100;
+      spMatched.style.width    = matchPct + '%';
+      spMatchedTxt.textContent = `${matchedCount}/${goal}`;
+      if (matchedCount === goal) spMatched.classList.add('done');
+
+      if (attempts > 0) {
+        const acc = Math.round((matchedCount / attempts) * 100);
+        spAccuracy.style.width    = acc + '%';
+        spAccuracyTxt.textContent = acc + '%';
+        if (acc === 100 && matchedCount === goal) spAccuracy.classList.add('done');
+      }
+    }
+
+    function updateLevelBadge() {
+      const lv = LEVELS[currentLevel];
+      levelName.textContent = `Poziom ${lv.id} — ${lv.label}`;
+      levelNum.textContent  = `${lv.id} / ${LEVELS.length}`;
+    }
+
+    // ===== BUDOWANIE SIATKI =====
+
+    function buildGrid() {
+      const pool = LEVELS[currentLevel].pool;
+
+      [...arabicDisplayCol.querySelectorAll('.pair-card')].forEach(el => el.remove());
+      [...romanDisplayCol.querySelectorAll('.pair-card')].forEach(el => el.remove());
+
+      // Lewa kolumna — cyfry arabskie rosnąco
+      [...pool].sort((a, b) => a - b).forEach(num => {
+        const el = document.createElement('button');
+        el.className        = 'pair-card';
+        el.textContent      = num;
+        el.dataset.value    = num;
+        el.dataset.side     = 'arabic';
+        el.addEventListener('click', () => onCardClick(el, 'arabic'));
+        arabicDisplayCol.appendChild(el);
+      });
+
+      // Prawa kolumna — cyfry rzymskie przetasowane
+      shuffle(pool).forEach(num => {
+        const el = document.createElement('button');
+        el.className        = 'pair-card';
+        el.textContent      = ROMAN[num];
+        el.dataset.value    = num;
+        el.dataset.side     = 'roman';
+        el.addEventListener('click', () => onCardClick(el, 'roman'));
+        romanDisplayCol.appendChild(el);
+      });
+
+      // Reset stanu rundy
+      matchedCount   = 0;
+      attempts       = 0;
+      perfectRound   = true;
+      selectedArabic = null;
+      selectedRoman  = null;
+      locked         = false;
+      feedbackEl.textContent = '';
+      feedbackEl.className   = 'feedback';
+      spMatched.style.width  = '0%';
+      spMatched.classList.remove('done');
+      spAccuracy.style.width = '0%';
+      spAccuracy.classList.remove('done');
+      spAccuracyTxt.textContent = '—';
+
+      updateLevelBadge();
+      updateProgressBar();
+    }
+
+    // ===== KLIKNIĘCIE KARTY =====
+
+    function onCardClick(el, side) {
+      if (locked) return;
+      if (el.classList.contains('matched')) return;
+
+      if (side === 'arabic') {
+        if (selectedArabic && selectedArabic.el !== el) selectedArabic.el.classList.remove('selected');
+        if (selectedArabic && selectedArabic.el === el) {
+          el.classList.remove('selected');
+          selectedArabic = null;
+          return;
+        }
+        el.classList.add('selected');
+        selectedArabic = { el, value: Number(el.dataset.value) };
+      } else {
+        if (selectedRoman && selectedRoman.el !== el) selectedRoman.el.classList.remove('selected');
+        if (selectedRoman && selectedRoman.el === el) {
+          el.classList.remove('selected');
+          selectedRoman = null;
+          return;
+        }
+        el.classList.add('selected');
+        selectedRoman = { el, value: Number(el.dataset.value) };
+      }
+
+      if (selectedArabic && selectedRoman) checkPair();
+    }
+
+    // ===== SPRAWDZENIE PARY =====
+
+    function checkPair() {
+      locked = true;
+      attempts++;
+
+      const elArabic = selectedArabic.el;
+      const elRoman  = selectedRoman.el;
+      const isMatch  = selectedArabic.value === selectedRoman.value;
+
+      // Raportuj do szybkiej gry (limit 20 dziennie, +5 Sekund za poprawną)
+      if (typeof reportQuickGameResult === 'function') {
+        reportQuickGameResult(isMatch);
+      }
+
+      if (isMatch) {
+        elArabic.classList.remove('selected');
+        elRoman.classList.remove('selected');
+        elArabic.classList.add('matched', 'pop-match');
+        elRoman.classList.add('matched', 'pop-match');
+        matchedCount++;
+        feedbackEl.textContent = '✓ Dobra para!';
+        feedbackEl.className   = 'feedback ok';
+        updateProgressBar();
+
+        selectedArabic = null;
+        selectedRoman  = null;
+        locked = false;
+
+        if (matchedCount === LEVELS[currentLevel].pool.length) {
+          setTimeout(onRoundComplete, 500);
+        }
+      } else {
+        perfectRound = false;
+        elArabic.classList.add('wrong');
+        elRoman.classList.add('wrong');
+        feedbackEl.textContent = '✗ To nie para — spróbuj jeszcze raz!';
+        feedbackEl.className   = 'feedback bad';
+        updateProgressBar();
+
+        setTimeout(() => {
+          elArabic.classList.remove('selected', 'wrong');
+          elRoman.classList.remove('selected', 'wrong');
+          selectedArabic = null;
+          selectedRoman  = null;
+          locked = false;
+        }, 700);
+      }
+    }
+
+    // ===== PO UKOŃCZENIU RUNDY =====
+
+    function onRoundComplete() {
+      if (perfectRound) {
+        const prevLevel = currentLevel;
+        currentLevel = Math.min(currentLevel + 1, LEVELS.length - 1);
+        localStorage.setItem(getRomanLevelKey(), currentLevel);
+
+        if (prevLevel === LEVELS.length - 1) {
+          finishSub.textContent = 'Wszystkie 10 poziomów zaliczone bezbłędnie!';
+          finishOverlay.classList.add('open');
+        } else {
+          showLevelUp(prevLevel, currentLevel);
+        }
+      } else {
+        // Błąd był — ta sama pula, nowa runda
+        feedbackEl.textContent = 'Prawie! Spróbuj tę samą rundę bez błędu.';
+        feedbackEl.className   = 'feedback bad';
+        setTimeout(buildGrid, 900);
+      }
+    }
+
+    // ===== OVERLAY AWANSU =====
+
+    function showLevelUp(from, to) {
+      const next      = LEVELS[to];    // nowy poziom — do tytułu
+      const completed = LEVELS[from];  // właśnie ukończony — do podpowiedzi (opisuje co gracz właśnie poznał)
+      luEmoji.textContent = from < 6 ? '⭐' : from === 6 ? '💡' : '🌟';
+      luTitle.textContent = `Poziom ${next.id} — ${next.label}!`;
+      luSub.textContent   = 'Bezbłędna runda! Odblokowałeś nową pulę.';
+      if (completed.tip) {
+        luTip.textContent   = completed.tip;
+        luTip.style.display = 'block';
+      } else {
+        luTip.style.display = 'none';
+      }
+      levelUpOverlay.classList.add('open');
+    }
+
+    document.getElementById('luNextBtn').addEventListener('click', () => {
+      levelUpOverlay.classList.remove('open');
+      buildGrid();
+    });
+
+    // ===== RESTART (od poziomu 1) =====
+
+    document.getElementById('playAgainBtn').addEventListener('click', () => {
+      currentLevel = 0;
+      localStorage.setItem(getRomanLevelKey(), 0);
+      finishOverlay.classList.remove('open');
+      buildGrid();
+    });
+
+    // ===== FAB + TOAST (wzorzec z sekcji 14 page-standards) =====
+
+    let _hintOpen = false;
+    let _hintTimer = null;
+
+    function toggleHint() { _hintOpen ? closeHint() : openHint(); }
+
+    function openHint() {
+      _hintOpen = true;
+      const fab   = document.getElementById('fabHint');
+      const toast = document.getElementById('hintToast');
+      const bar   = document.getElementById('hintBar');
+      fab.classList.add('active');
+      toast.classList.remove('auto-close');
+      toast.classList.add('visible');
+      bar.style.transition = 'none';
+      bar.style.transform  = 'scaleX(0)';
+      void bar.offsetWidth;
+      toast.classList.add('auto-close');
+      clearTimeout(_hintTimer);
+      _hintTimer = setTimeout(closeHint, 10000);
+    }
+
+    function closeHint() {
+      _hintOpen = false;
+      clearTimeout(_hintTimer);
+      document.getElementById('fabHint').classList.remove('active');
+      const toast = document.getElementById('hintToast');
+      toast.classList.remove('visible', 'auto-close');
+    }
+
+    // ===== START =====
+
+    buildGrid();
+  </script>
+  <script src="transitions.js"></script>
+</body>
+</html>

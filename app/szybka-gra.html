@@ -40,6 +40,12 @@
       gap: clamp(12px, 2.5vmin, 28px);
       width: min(480px, 92vw);
     }
+    /* 5. karta (nieparzysta ostatnia) — wyśrodkowana, szerokość jak pozostałe */
+    .nav-btn:last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+      justify-self: center;
+      width: calc(50% - clamp(6px, 1.25vmin, 14px));
+    }
     .topbar-spacer { width: var(--icon-size); }
   </style>
 </head>
@@ -86,6 +92,13 @@
        data-hint="Ustaw wskazówki tak, aby pokazywały podaną godzinę. Do 20 poprawnych dziennie daje +5 Sekund każda.">
       <span class="icon">⚙️</span>
       Ustaw Wskazówki
+      <span class="reward-note">+5 ⏳ za poprawną</span>
+    </a>
+
+    <a href="roman-pairs.html" class="nav-btn"
+       data-hint="Połącz cyfry arabskie z ich odpowiednikami rzymskimi. 10 poziomów trudności z podpowiedziami. Do 20 poprawnych dziennie daje +5 Sekund każda.">
+      <span class="icon">🏛️</span>
+      Cyfry Rzymskie
       <span class="reward-note">+5 ⏳ za poprawną</span>
     </a>
 

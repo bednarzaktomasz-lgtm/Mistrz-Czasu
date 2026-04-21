@@ -67,7 +67,7 @@
       height: 3px; background: var(--accent-color); border-radius: 0 0 16px 16px;
       width: 100%; transform-origin: left; transform: scaleX(0);
     }
-    .hint-toast.auto-close .hint-toast-bar { transform: scaleX(1); transition: transform 5s linear; }
+    .hint-toast.auto-close .hint-toast-bar { transform: scaleX(1); transition: transform 10s linear; }
   </style>
 </head>
 <body>
@@ -182,7 +182,7 @@
     void bar.offsetWidth;
     toast.classList.add('auto-close');
     clearTimeout(_hintTimer);
-    _hintTimer = setTimeout(closeHint, 5000);
+    _hintTimer = setTimeout(closeHint, 10000);
   }
 
   function closeHint() {

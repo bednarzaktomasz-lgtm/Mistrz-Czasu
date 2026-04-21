@@ -618,7 +618,7 @@ function openHint() {
   void bar.offsetWidth;           // wymuś reflow przed animacją
   toast.classList.add('auto-close');
   clearTimeout(_hintTimer);
-  _hintTimer = setTimeout(closeHint, 5000);
+  _hintTimer = setTimeout(closeHint, 10000);
 }
 
 function closeHint() {
@@ -632,7 +632,7 @@ function closeHint() {
 
 ### Zachowanie
 
-- Toast wysuwa się od dołu (ponad FAB), znika automatycznie po 5s
+- Toast wysuwa się od dołu (ponad FAB), znika automatycznie po 10s — dzieci czytają wolniej
 - Pasek na dole toastu odlicza czas — feedback wizualny autohide
 - Ponowne kliknięcie `?` zamyka toast przed czasem
 - `?` obraca się o 15° gdy aktywny
