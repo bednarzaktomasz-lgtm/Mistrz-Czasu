@@ -58,6 +58,25 @@ body.page-loaded {
   gap: clamp(8px, 1.5vmin, 16px);
 }
 
+/* ---------- Session seconds badge ---------- */
+.session-seconds {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 20px;
+  padding: clamp(3px, 0.6vmin, 6px) clamp(7px, 1.2vmin, 12px);
+  font-size: clamp(0.72rem, 1.4vmin, 0.88rem);
+  font-weight: 700;
+  color: #ffd700;
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+.session-seconds.bump {
+  color: #ffe44d;
+}
+
 /* ---------- Icon buttons (SVG / links) ---------- */
 .icon-btn {
   width: var(--icon-size);

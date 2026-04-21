@@ -199,7 +199,18 @@
     showDate: true,
     showSecondHand: true,
     showBgControls: false,
+    showAmPm: true,
   });
+
+  // Synchronizuj słońce/księżyc z realnym czasem
+  function syncAmPm() {
+    if (clock.ampmDisplay) {
+      const is24 = hourFormatToggle.classList.contains('active');
+      clock.ampmDisplay.style.display = is24 ? '' : 'none';
+      if (is24) clock.setAmPm(new Date().getHours() >= 12);
+    }
+  }
+  setInterval(syncAmPm, 60000);
 
   // ==================== Apply Settings to UI ====================
   // Mode toggles
@@ -217,6 +228,7 @@
   soundToggle.classList.toggle('active', settings.soundEnabled);
   timeHintToggle.classList.toggle('active', settings.showTimeHint);
   hourFormatToggle.classList.toggle('active', settings.hourFormat === '24');
+  syncAmPm();
 
   // ==================== Event Listeners ====================
 
@@ -266,6 +278,7 @@
     hourFormatToggle.classList.toggle('active');
     const format = hourFormatToggle.classList.contains('active') ? '24' : '12';
     localStorage.setItem(STORAGE_KEYS.hourFormat, format);
+    syncAmPm();
   });
 
   // Help button

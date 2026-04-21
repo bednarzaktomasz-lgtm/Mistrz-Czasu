@@ -385,7 +385,7 @@ function markStarCompleted(nodeId, starNum, bestStreak) {
  */
 function reportQuickGameResult(isCorrect) {
   const state = loadGame();
-  if (!state) return { newAchievements: [] };
+  if (!state) return { newAchievements: [], secondsAdded: false };
   const today = new Date().toISOString().slice(0, 10);
 
   if (state.stats.quickGameLastDate !== today) {
@@ -393,9 +393,11 @@ function reportQuickGameResult(isCorrect) {
     state.stats.quickGameLastDate = today;
   }
 
+  let secondsAdded = false;
   if (isCorrect && state.stats.quickGameTodayCount < 20) {
     state.seconds += 5;
     state.stats.quickGameTodayCount++;
+    secondsAdded = true;
   }
 
   if (isCorrect) state.stats.totalCorrect++;
@@ -404,7 +406,7 @@ function reportQuickGameResult(isCorrect) {
   if (isCorrect) state.activityCalendar[today]++;
   const newAchievements = _checkAchievementsInPlace(state);
   saveGame(state);
-  return { newAchievements };
+  return { newAchievements, secondsAdded };
 }
 
 // ----- XP / Level helper -----
@@ -606,11 +608,11 @@ const ACHIEVEMENTS = [
     check: s => (s.streak.current >= 7 || s.streak.best >= 7),
   },
   {
-    id:   'streak-30',
+    id:   'streak-14',
     icon: '🌟',
-    name: 'Seria 30',
-    desc: 'Zagraj 30 dni z rzędu',
-    check: s => (s.streak.current >= 30 || s.streak.best >= 30),
+    name: 'Seria 14',
+    desc: 'Zagraj 14 dni z rzędu',
+    check: s => (s.streak.current >= 14 || s.streak.best >= 14),
   },
   {
     id:   'connoisseur',

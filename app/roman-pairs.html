@@ -330,7 +330,9 @@
         <polyline points="15 18 9 12 15 6"></polyline>
       </svg>
     </a>
-    <div class="topbar-right"></div>
+    <div class="topbar-right">
+      <span class="session-seconds" id="sessionSeconds" style="display:none">⏳ +0</span>
+    </div>
   </div>
 
   <!-- D. Pasek postępu — bezpośrednio pod topbarem -->
@@ -431,6 +433,65 @@
     function getRomanLevelKey() {
       const profile = (typeof getActiveProfile === 'function') ? getActiveProfile() : null;
       return profile ? `mistrzCzasu_romanLevel_${profile.id}` : 'mistrzCzasu_romanLevel_guest';
+    }
+
+    // ===== AUDIO =====
+
+    let audioCtx = null;
+    const soundEnabled = localStorage.getItem('zegar_soundEnabled') !== 'false';
+
+    function initAudioContext() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playBeep(frequency, duration) {
+      if (!soundEnabled) return;
+      initAudioContext();
+      const osc  = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.frequency.value = frequency;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration / 1000);
+      osc.start(audioCtx.currentTime);
+      osc.stop(audioCtx.currentTime + duration / 1000);
+    }
+
+    function playSuccess() {
+      if (!soundEnabled) return;
+      initAudioContext();
+      [440, 660].forEach((freq, i) => {
+        const osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+        osc.connect(g); g.connect(audioCtx.destination);
+        osc.frequency.value = freq; osc.type = 'sine';
+        const t = audioCtx.currentTime + i * 0.13;
+        g.gain.setValueAtTime(0.1, t);
+        g.gain.exponentialRampToValueAtTime(0.01, t + 0.18);
+        osc.start(t); osc.stop(t + 0.18);
+      });
+    }
+
+    function playError()  { playBeep(220, 300); }
+    function playClick1() { playBeep(440, 50); }   // pierwsze zaznaczenie — jak klawiatura wpisz
+    function playClick2() { playBeep(440, 50); }   // drugie zaznaczenie — identyczny jak pierwsze
+
+    // ===== STAN =====
+
+    // ===== LICZNIK SEKUND SESJI =====
+
+    let sessionSeconds = 0;
+
+    function updateSessionSeconds(delta) {
+      sessionSeconds += delta;
+      const el = document.getElementById('sessionSeconds');
+      el.textContent = '⏳ +' + sessionSeconds;
+      el.style.display = 'inline-block';
+      el.classList.remove('bump');
+      void el.offsetWidth;
+      el.classList.add('bump');
     }
 
     // ===== STAN =====
@@ -561,6 +622,7 @@
           selectedArabic = null;
           return;
         }
+        selectedRoman ? playClick2() : playClick1();
         el.classList.add('selected');
         selectedArabic = { el, value: Number(el.dataset.value) };
       } else {
@@ -570,11 +632,15 @@
           selectedRoman = null;
           return;
         }
+        selectedArabic ? playClick2() : playClick1();
         el.classList.add('selected');
         selectedRoman = { el, value: Number(el.dataset.value) };
       }
 
-      if (selectedArabic && selectedRoman) checkPair();
+      if (selectedArabic && selectedRoman) {
+        locked = true;
+        setTimeout(checkPair, 1000);
+      }
     }
 
     // ===== SPRAWDZENIE PARY =====
@@ -589,7 +655,8 @@
 
       // Raportuj do szybkiej gry (limit 20 dziennie, +5 Sekund za poprawną)
       if (typeof reportQuickGameResult === 'function') {
-        reportQuickGameResult(isMatch);
+        const r = reportQuickGameResult(isMatch);
+        if (r && r.secondsAdded) updateSessionSeconds(5);
       }
 
       if (isMatch) {
@@ -597,6 +664,7 @@
         elRoman.classList.remove('selected');
         elArabic.classList.add('matched', 'pop-match');
         elRoman.classList.add('matched', 'pop-match');
+        playSuccess();
         matchedCount++;
         feedbackEl.textContent = '✓ Dobra para!';
         feedbackEl.className   = 'feedback ok';
@@ -613,6 +681,7 @@
         perfectRound = false;
         elArabic.classList.add('wrong');
         elRoman.classList.add('wrong');
+        playError();
         feedbackEl.textContent = '✗ To nie para — spróbuj jeszcze raz!';
         feedbackEl.className   = 'feedback bad';
         updateProgressBar();

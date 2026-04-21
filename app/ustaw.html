@@ -263,6 +263,7 @@
 			</svg>
 		</a>
 		<div class="topbar-right">
+			<span class="session-seconds" id="sessionSeconds" style="display:none">⏳ +0</span>
 			<svg class="icon-btn settings-icon" id="settingsIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
 				<line x1="4" y1="6" x2="20" y2="6"></line><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"></circle>
 				<line x1="4" y1="12" x2="20" y2="12"></line><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"></circle>
@@ -407,6 +408,8 @@
 		if (isExpedition) {
 			document.body.classList.add('expedition-mode');
 			document.getElementById('backBtn').href = 'mapa.html';
+		} else {
+			document.getElementById('backBtn').href = 'szybka-gra.html';
 		}
 
 		const STORAGE_KEYS = {
@@ -451,6 +454,7 @@
 			showDate: true,
 			showSecondHand: false,
 			showBgControls: false,
+			showAmPm: globalSettings.hourFormat === '24',
 			handColor: globalSettings.handColor,
 			onTimeChange: () => {
 				if (!hasMovedHand) hasMovedHand = true;
@@ -483,6 +487,16 @@
 		// ==================== Session State (star condition: 8+6) ====================
 		let session          = { total: 0, streak: 0, bestStreak: 0 };
 		let starAlreadyEarned = false;
+		let sessionSeconds = 0;
+
+		function updateSessionSeconds(delta) {
+			sessionSeconds += delta;
+			const el = document.getElementById('sessionSeconds');
+			el.style.display = '';
+			el.textContent = '⏳ +' + sessionSeconds;
+			el.classList.add('bump');
+			setTimeout(() => el.classList.remove('bump'), 400);
+		}
 
 		// ==================== Sync UI to Global Settings ====================
 		document.querySelectorAll('.mode-toggle').forEach(btn => {
@@ -598,6 +612,7 @@
 			// Reset clock to 12:00
 			clock.setTime(12, 0);
 			clock.hideGhostHands();
+			if (hourFormat === '24') clock.setAmPm(targetTime.h >= 13);
 
 			// Update displays
 			targetTimeEl.textContent = formatTime(targetTime.h, targetTime.m);
@@ -640,15 +655,18 @@
 				if (isExpedition && expeditionNode) {
 					const r = reportResult(expeditionNode, expeditionStar, true);
 					if (r && r.newAchievements) _answerAch = r.newAchievements;
+					updateSessionSeconds(5);
 				} else {
 					const r = reportQuickGameResult(true);
 					if (r && r.newAchievements) _answerAch = r.newAchievements;
+					if (r && r.secondsAdded) updateSessionSeconds(5);
 				}
 
 				// Check star condition
 				if (isExpedition && !starAlreadyEarned && session.total >= correctTarget && session.bestStreak >= 6) {
 					starAlreadyEarned = true;
 					const sr = markStarCompleted(expeditionNode, expeditionStar, session.bestStreak);
+					updateSessionSeconds(50);
 					const allNew = [..._answerAch];
 					if (sr && sr.newAchievements) {
 						sr.newAchievements.forEach(a => { if (!allNew.find(p => p.id === a.id)) allNew.push(a); });
