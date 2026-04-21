@@ -25,3 +25,29 @@ if (selectedArabic && selectedRoman) {
 `locked = true` musi wyprzedzać `setTimeout`, nie być wewnątrz callbacka.
 
 ---
+
+## 2. Efekt hover przyklejający się na urządzeniach dotykowych
+
+**Kontekst:** Przyciski odpowiedzi w `godziny.html` — na tablecie po tapnięciu przycisku
+stan `:hover` pozostawał widoczny w kolejnym pytaniu, sugerując dziecku poprawną odpowiedź.
+
+**Problem:** CSS `:hover` na urządzeniach dotykowych (tablet, telefon) jest wyzwalany przez
+dotknięcie i nie znika automatycznie po podniesieniu palca. Przeglądarka traktuje ostatni
+dotknięty element jako "hovered" do czasu kolejnej interakcji.
+
+**Poprawny wzorzec:**
+```css
+/* ŹLE — hover działa też na urządzeniach dotykowych */
+.answer-btn:hover { background: #1a1a1a; border-color: #444; }
+
+/* DOBRZE — hover tylko gdy urządzenie ma prawdziwy kursor (mysz/touchpad) */
+@media (hover: hover) {
+  .answer-btn:hover { background: #1a1a1a; border-color: #444; }
+}
+```
+
+**Zasada ogólna:** Każdy styl `:hover` na elementach interaktywnych (przyciski, karty)
+należy owijać w `@media (hover: hover)`. Dotyczy wszystkich stron, na których grają dzieci
+na tabletach.
+
+---

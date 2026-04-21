@@ -282,6 +282,36 @@
       color: #f0f0f0;
     }
 
+    .streak-stats { display: flex; flex-direction: column; gap: 2px; }
+    .streak-stats-value {
+      font-size: clamp(1rem, 2.2vmin, 1.4rem);
+      font-weight: 700;
+      color: #f0f0f0;
+    }
+
+    /* ===== Cal day tooltip ===== */
+    .cal-tip {
+      position: fixed;
+      z-index: 400;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 7px 13px;
+      font-size: clamp(0.75rem, 1.4vmin, 0.9rem);
+      color: #f0f0f0;
+      pointer-events: none;
+      white-space: nowrap;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .cal-tip.visible { opacity: 1; }
+
+    @media (hover: hover) {
+      .cal-day.active:not(.empty):hover { filter: brightness(1.3); cursor: pointer; }
+    }
+    .cal-day.active:not(.empty) { cursor: pointer; }
+
     .journey-day {
       font-size: clamp(0.78rem, 1.4vmin, 0.95rem);
       color: color-mix(in srgb, #bb86fc 80%, #fff);
@@ -294,6 +324,25 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+    }
+    .cal-nav-btn {
+      background: transparent;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #888;
+      font-size: 1.1rem;
+      line-height: 1;
+      width: clamp(24px, 4vmin, 32px);
+      height: clamp(24px, 4vmin, 32px);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
+    }
+    .cal-nav-btn:disabled { opacity: 0.25; cursor: default; }
+    @media (hover: hover) {
+      .cal-nav-btn:not(:disabled):hover { color: #f0f0f0; border-color: #555; }
     }
     .cal-title {
       font-size: clamp(0.82rem, 1.5vmin, 0.98rem);
@@ -455,13 +504,19 @@
           <div class="streak-best-value" id="bestValue">🏆 0</div>
           <div class="streak-sublabel">rekord</div>
         </div>
+        <div class="streak-divider"></div>
+        <div class="streak-stats">
+          <div class="streak-stats-value" id="statsTotal">0 pytań</div>
+          <div class="streak-sublabel" id="statsAccuracy">—</div>
+        </div>
       </div>
 
       <div class="section-sep"></div>
 
       <div class="cal-header">
+        <button class="cal-nav-btn" id="calPrev" title="Poprzedni miesiąc">‹</button>
         <div class="cal-title" id="calTitle">Ładowanie…</div>
-        <div class="journey-day" id="journeyDay">Dzień 1. podróży</div>
+        <button class="cal-nav-btn" id="calNext" title="Następny miesiąc" disabled>›</button>
       </div>
 
       <div class="cal-weekdays">
@@ -489,6 +544,8 @@
   </nav>
 
   <script src="game-state.js"></script>
+  <!-- Cal tooltip -->
+  <div class="cal-tip" id="calTip"></div>
   <script>
     // ===== PROFILE CHECK =====
     migrateFromLegacy();
@@ -538,26 +595,62 @@
 
     document.getElementById('bestValue').textContent = `🏆 ${_streak.best}`;
 
+    // Stats
+    const _attempts = (_save.stats && _save.stats.totalAttempts) || 0;
+    const _correct  = (_save.stats && _save.stats.totalCorrect)  || 0;
+    const _acc      = _attempts > 0 ? Math.round(_correct / _attempts * 100) : null;
+    document.getElementById('statsTotal').textContent    = `📊 ${_attempts} pytań`;
+    document.getElementById('statsAccuracy').textContent = _acc !== null ? `${_acc}% celność` : '—';
+
     const _fireBg = document.getElementById('fireBg');
     _fireBg.textContent  = _streak.current > 0 ? '🔥' : '🕯️';
     _fireBg.className    = 'streak-fire-bg' + (_streak.current > 0 ? ' alive' : '');
 
-    // Journey day
-    const _createdAt  = (_profile && _profile.createdAt) || (_save && _save.createdAt) || Date.now();
-    const _journeyDay = Math.max(1, Math.floor((Date.now() - _createdAt) / 86400000) + 1);
-    document.getElementById('journeyDay').textContent = `Dzień ${_journeyDay}. podróży`;
+    // Calendar tooltip
+    const _calTip = document.getElementById('calTip');
+    let _calTipTimer = null;
+
+    function showCalTip(e, dateStr, count) {
+      clearTimeout(_calTipTimer);
+      const label = `✅ ${count} poprawnych`;
+      _calTip.textContent = label;
+      _calTip.classList.add('visible');
+      // pozycjonuj nad klikniętym dniem
+      const rect = e.currentTarget.getBoundingClientRect();
+      const tipW = 150;
+      let left = rect.left + rect.width / 2 - tipW / 2;
+      left = Math.max(8, Math.min(left, window.innerWidth - tipW - 8));
+      _calTip.style.left  = left + 'px';
+      _calTip.style.top   = (rect.top - 42) + 'px';
+      _calTip.style.width = tipW + 'px';
+      _calTipTimer = setTimeout(() => _calTip.classList.remove('visible'), 2500);
+    }
+
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.cal-day')) _calTip.classList.remove('visible');
+    });
 
     // Calendar — current month, 6 rows × 7 cols
-    (function buildCalendar() {
+    let _calOffset = 0; // 0 = bieżący miesiąc, -1 = poprzedni itd.
+
+    function buildCalendar() {
       const MONTHS_PL = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec',
                          'Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
 
       const grid  = document.getElementById('calGrid');
-      const today = new Date(); today.setHours(0, 0, 0, 0);
-      const year  = today.getFullYear();
-      const month = today.getMonth();
+      grid.innerHTML = '';
+
+      const now   = new Date(); now.setHours(0, 0, 0, 0);
+      const today = new Date(now);
+
+      // Oblicz wyświetlany miesiąc
+      const viewDate = new Date(now.getFullYear(), now.getMonth() + _calOffset, 1);
+      const year  = viewDate.getFullYear();
+      const month = viewDate.getMonth();
 
       document.getElementById('calTitle').textContent = MONTHS_PL[month] + ' ' + year;
+      document.getElementById('calNext').disabled = _calOffset >= 0;
+      document.getElementById('calPrev').disabled = false;
 
       // Monday-first: Mon=0 … Sun=6
       const firstDow    = (new Date(year, month, 1).getDay() + 6) % 7;
@@ -590,10 +683,20 @@
           if (inStreak && hasAct) cell.classList.add('active', 'streak-run');
           else if (hasAct)        cell.classList.add('active');
           cell.textContent = dayNum;
+
+          if (hasAct) {
+            const count = _save.activityCalendar[dateStr];
+            cell.addEventListener('click', e => showCalTip(e, dateStr, count));
+          }
         }
         grid.appendChild(cell);
       }
-    })();
+    }
+
+    document.getElementById('calPrev').addEventListener('click', () => { _calOffset--; buildCalendar(); });
+    document.getElementById('calNext').addEventListener('click', () => { if (_calOffset < 0) { _calOffset++; buildCalendar(); } });
+
+    buildCalendar();
   </script>
   <script src="transitions.js"></script>
 </body>
