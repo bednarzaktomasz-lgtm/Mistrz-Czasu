@@ -50,11 +50,30 @@
       gap: clamp(12px, 2.5vmin, 28px);
       width: min(480px, 92vw);
     }
-    /* 5. karta (nieparzysta ostatnia) — wyśrodkowana, szerokość jak pozostałe */
+    /* Ostatnia karta sama w rzędzie — wyśrodkowana (2-kol) */
     .nav-btn:last-child:nth-child(odd) {
       grid-column: 1 / -1;
       justify-self: center;
       width: calc(50% - clamp(6px, 1.25vmin, 14px));
+    }
+    /* 3-kolumnowa siatka na szerszych ekranach */
+    @media (min-width: 540px) {
+      .nav-buttons {
+        grid-template-columns: 1fr 1fr 1fr;
+        width: min(700px, 92vw);
+      }
+      /* reset reguły 2-kol — 10 kafelków = parzysta, brak sieroty */
+      .nav-btn:last-child:nth-child(odd) {
+        grid-column: auto;
+        justify-self: auto;
+        width: auto;
+      }
+      /* wyśrodkuj gdy ostatni jest sam w rzędzie (pozycja 3n+1) */
+      .nav-btn:last-child:nth-child(3n+1) {
+        grid-column: 1 / -1;
+        justify-self: center;
+        width: calc(33.33% - clamp(8px, 1.67vmin, 19px));
+      }
     }
     .topbar-spacer { width: var(--icon-size); }
   </style>
@@ -77,13 +96,6 @@
 
   <div class="nav-buttons">
 
-    <a href="nauka.html" class="nav-btn no-reward"
-       data-hint="Swobodnie przestawiaj wskazówki zegara i obserwuj czas. Bez scoringu — czysta nauka.">
-      <span class="icon">🕐</span>
-      Wolna Nauka
-      <span class="reward-note">bez nagród</span>
-    </a>
-
     <a href="godziny.html" class="nav-btn"
        data-hint="Odczytaj godzinę i wybierz właściwą odpowiedź. Do 20 poprawnych dziennie daje +5 Sekund każda.">
       <span class="icon">🔵</span>
@@ -105,6 +117,13 @@
       <span class="reward-note">+5 ⏳ za poprawną</span>
     </a>
 
+    <a href="digit-placer-arabic.html" class="nav-btn" id="dpArabicBtn"
+       data-hint="Uzupełnij zegar cyframi arabskimi, minutami (:05…) lub godziną w formacie 24h. Do 20 poprawnych dziennie daje +5 Sekund każda.">
+      <span class="icon">🔢</span>
+      Uzupełnij Zegar
+      <span class="reward-note" id="dpArabicNote">+5 ⏳ za poprawną</span>
+    </a>
+
     <a href="roman-pairs.html" class="nav-btn"
        data-hint="Połącz cyfry arabskie z ich odpowiednikami rzymskimi. 10 poziomów trudności z podpowiedziami. Do 20 poprawnych dziennie daje +5 Sekund każda.">
       <span class="icon">🏛️</span>
@@ -118,6 +137,13 @@
       Wielkie Liczby
       <span class="reward-note">+5 ⏳ za poprawną</span>
       <span class="lock-icon">🔒 ukończ Cyfry Rzymskie</span>
+    </a>
+
+    <a href="digit-placer-roman.html" class="nav-btn" id="dpRomanBtn"
+       data-hint="Uzupełnij zegar cyframi rzymskimi (I–XII). Trzy tryby wejścia: wybór, klawiatura I/V/X lub kliknięcie tarczy. Do 20 poprawnych dziennie daje +5 Sekund każda.">
+      <span class="icon">🕛</span>
+      Zegar Rzymski
+      <span class="reward-note" id="dpRomanNote">+5 ⏳ za poprawną</span>
     </a>
 
     <a href="kalendarz-dni.html" class="nav-btn"
@@ -134,18 +160,11 @@
       <span class="reward-note">+5 ⏳ za rundę</span>
     </a>
 
-    <a href="digit-placer-roman.html" class="nav-btn" id="dpRomanBtn"
-       data-hint="Uzupełnij zegar cyframi rzymskimi (I–XII). Trzy tryby wejścia: wybór, klawiatura I/V/X lub kliknięcie tarczy. Do 20 poprawnych dziennie daje +5 Sekund każda.">
-      <span class="icon">🏺</span>
-      Zegar Rzymski
-      <span class="reward-note" id="dpRomanNote">+5 ⏳ za poprawną</span>
-    </a>
-
-    <a href="digit-placer-arabic.html" class="nav-btn" id="dpArabicBtn"
-       data-hint="Uzupełnij zegar cyframi arabskimi, minutami (:05…) lub godziną w formacie 24h. Do 20 poprawnych dziennie daje +5 Sekund każda.">
-      <span class="icon">🔢</span>
-      Uzupełnij Zegar
-      <span class="reward-note" id="dpArabicNote">+5 ⏳ za poprawną</span>
+    <a href="nauka.html" class="nav-btn no-reward"
+       data-hint="Swobodnie przestawiaj wskazówki zegara i obserwuj czas. Bez scoringu — czysta nauka.">
+      <span class="icon">🕐</span>
+      Wolna Nauka
+      <span class="reward-note">bez nagród</span>
     </a>
 
   </div>

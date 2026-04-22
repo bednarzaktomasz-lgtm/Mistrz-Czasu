@@ -443,7 +443,7 @@
     <span class="hint-toast-icon">💡</span>
     <div class="hint-toast-body">
       <div class="hint-toast-title">Jak to działa?</div>
-      <div class="hint-toast-msg">Podążaj ścieżką i zdobywaj gwiazdki na każdej wyspie. Zdobądź ⭐ żeby odblokować kolejną. Każda wyspa ma 3 ćwiczenia — od łatwego do trudnego. Ukończ wszystkie 4 pętle, żeby zostać Mistrzem Czasu!</div>
+      <div class="hint-toast-msg">Podążaj ścieżką i zdobywaj gwiazdki na każdej wyspie. Zdobądź ⭐ żeby odblokować kolejną. Każda wyspa ma 3 ćwiczenia — od łatwego do trudnego. Ukończ wszystkie 5 pętli, żeby zostać Mistrzem Czasu!</div>
     </div>
     <div class="hint-toast-bar" id="hintBar"></div>
   </div>
@@ -481,13 +481,14 @@
 
     // ===== LOOP CONFIG =====
     const LOOP_CONFIG = {
-      arabic: { label: 'Pętla 1 — Cyfry Arabskie', icon: '🔢' },
-      roman:  { label: 'Pętla 2 — Cyfry Rzymskie',  icon: '🏛️' },
-      blank:  { label: 'Pętla 3 — Bez Cyfr',        icon: '🌑' },
-      '24h':  { label: 'Pętla 4 — Format 24h',      icon: '🌐' },
+      arabic:  { label: 'Pętla 1 — Cyfry Arabskie', icon: '🔢' },
+      roman:   { label: 'Pętla 2 — Cyfry Rzymskie',  icon: '🏛️' },
+      blank:   { label: 'Pętla 3 — Bez Cyfr',        icon: '🌑' },
+      '13-24': { label: 'Pętla 4 — Godziny 13–24',  icon: '🌆' },
+      '24h':   { label: 'Pętla 5 — Format 24h',      icon: '🌐' },
     };
 
-    // ===== NODE CONFIG (20 węzłów = 4 pętle × 5 wysp) =====
+    // ===== NODE CONFIG (25 węzłów = 5 pętli × 5 wysp) =====
     const NODE_CONFIG = [
       { id: 'full-hours',     loop: 'arabic', icon: '🏝️', name: 'Wyspa Pełnych Godzin' },
       { id: 'quarters',       loop: 'arabic', icon: '🌊', name: 'Zatoka Kwadransów' },
@@ -504,7 +505,12 @@
       { id: 'blank-half',     loop: 'blank',  icon: '🌒', name: 'Dolina Cienia' },
       { id: 'blank-five',     loop: 'blank',  icon: '🏜️', name: 'Pustynia Bez Znaków' },
       { id: 'blank-minute',   loop: 'blank',  icon: '🌑', name: 'Mroczne Bezdroża' },
-      { id: '24h-full',       loop: '24h',    icon: '🌃', name: 'Brama Południa' },
+      { id: 'pm-full',       loop: '13-24', icon: '🌆', name: 'Popołudniowy Port' },
+      { id: 'pm-quarters',   loop: '13-24', icon: '🌇', name: 'Zachód Kwadransów' },
+      { id: 'pm-half',       loop: '13-24', icon: '🌃', name: 'Nocne Wpół do' },
+      { id: 'pm-five',       loop: '13-24', icon: '🌙', name: 'Nocna Przystań' },
+      { id: 'pm-minute',     loop: '13-24', icon: '🌠', name: 'Gwiezdne Minuty' },
+      { id: '24h-full',       loop: '24h',    icon: '�', name: 'Brama Południa' },
       { id: '24h-quarters',   loop: '24h',    icon: '🗼', name: 'Wieża Zegarowa' },
       { id: '24h-half',       loop: '24h',    icon: '🌉', name: 'Kanał Wpół do' },
       { id: '24h-five',       loop: '24h',    icon: '🚇', name: 'Metro Nocne' },

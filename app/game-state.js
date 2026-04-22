@@ -128,7 +128,13 @@ function createDefaultState(profileId) {
       'blank-half':     node(),
       'blank-five':     node(),
       'blank-minute':   node(),
-      // Pętla 4 — format 24h
+      // Pętla 4 — godziny 13–24
+      'pm-full':       node(),
+      'pm-quarters':   node(),
+      'pm-half':       node(),
+      'pm-five':       node(),
+      'pm-minute':     node(),
+      // Pętla 5 — format 24h
       '24h-full':       node(),
       '24h-quarters':   node(),
       '24h-half':       node(),
@@ -582,6 +588,17 @@ const ACHIEVEMENTS = [
       }),
   },
   {
+    id:   'pm-master',
+    icon: '🌆',
+    name: 'Mistrz Południa',
+    desc: 'Ukończ całą pętlę Godzin 13–24 (5 wysp)',
+    check: s => ['pm-full','pm-quarters','pm-half','pm-five','pm-minute']
+      .every(id => {
+        const n = s.nodes[id];
+        return n && n.star1.completed && n.star2.completed && n.star3.completed;
+      }),
+  },
+  {
     id:   '24h-chrononaut',
     icon: '🌌',
     name: 'Chrononauta',
@@ -596,7 +613,7 @@ const ACHIEVEMENTS = [
     id:   'master',
     icon: '👑',
     name: 'Mistrz Czasu',
-    desc: 'Wszystkie 20 wysp × 3 gwiazdki',
+    desc: 'Wszystkie 25 wysp × 3 gwiazdki',
     check: s => Object.values(s.nodes).every(n =>
       n.star1.completed && n.star2.completed && n.star3.completed),
   },

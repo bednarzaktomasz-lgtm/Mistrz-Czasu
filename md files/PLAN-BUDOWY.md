@@ -530,24 +530,27 @@ po ukończeniu sesji:
   - `reportQuickGameResult()` przy każdej próbie dopasowania pary (limit 20/dzień, +5 Sekund)
   - FAB+Toast zamiast help-btn; back link → `szybka-gra.html`
   - Dodana jako 5. opcja w `szybka-gra.html` (wyśrodkowana ostatnia karta)
-- [ ] **8.2** `digit-placer.html` (dawniej `demo-match.html`) — uzupełnianie cyfr na tarczy zegara:
-  - 3 tryby wejścia: Wybór 4 opcji / Klawiatura / Zaznacz na tarczy
-  - 4 tryby etykiet: arabskie / rzymskie / minuty / 24h
-  - 2 poziomy trudności (cyfry zostają vs. zanikają)
-  - Integracja z `game-state.js` i `reportQuickGameResult()`
-  - Dodanie jako 6. opcja w `szybka-gra.html`
+- [x] **8.2** Dwa pliki produkcyjne zastępują `demo-match.html` — uzupełnianie cyfr na tarczy zegara:
+  - **`digit-placer-roman.html`** — stały tryb `roman` (I–XII), klawiatura I/V/X, 3 tryby wejścia (Wybór/Klawiatura/Zaznacz), 2 poziomy trudności, `SETTINGS_KEY = 'zegar_digitPlacer_roman'`
+  - **`digit-placer-arabic.html`** — tryby: arabskie (123) / minuty (:05…) / 24h (13–24), klawiatura numeryczna, 3 tryby wejścia, 2 poziomy trudności, `SETTINGS_KEY = 'zegar_digitPlacer_arabic'`
+  - Oba pliki: modal ⚙️ z zapisem ustawień do localStorage, `reportQuickGameResult(true/false)` per odpowiedź, Web Audio (playSuccess/playError/playClick), FAB+Toast z podpowiedzią, back link → `szybka-gra.html`
+  - `szybka-gra.html`: dwa nowe kafelki (🏺 Zegar Rzymski, 🔢 Uzupełnij Zegar); podtytuł kafelka ładuje ostatni preset z localStorage; siatka zmieniona na responsywną 2→3 kolumny (od 540px); nowa kolejność kafelków: Wybierz → Wpisz → Ustaw → Uzupełnij Zegar → Cyfry Rzymskie → Wielkie Liczby → Zegar Rzymski → Dni → Miesiące → Wolna Nauka
 
 ### Pliki:
 - Nowy: `roman-pairs.html` (produkcyjna wersja `demo-roman.html`)
-- Do utworzenia: `digit-placer.html` (produkcyjna wersja `demo-match.html`)
-- Modyfikacja: `szybka-gra.html`
+- Nowy: `digit-placer-roman.html` (roman-only, produkcja)
+- Nowy: `digit-placer-arabic.html` (arabic/minutes/24h, produkcja)
+- Modyfikacja: `szybka-gra.html` (2 nowe kafelki, responsywna siatka 2→3 kol., nowa kolejność)
 
 ### Weryfikacja:
 - [x] Szybka Gra → karta "Cyfry Rzymskie" → `roman-pairs.html`
 - [x] Progres levelu per profil (nie globalny)
 - [x] `reportQuickGameResult()` nalicza Sekundy
 - [x] FAB+Toast działa z podpowiedzią
-- [ ] `digit-placer.html` dostępna z Szybkiej Gry
+- [x] `digit-placer-roman.html` dostępna z Szybkiej Gry (kafelek 🏺 Zegar Rzymski)
+- [x] `digit-placer-arabic.html` dostępna z Szybkiej Gry (kafelek 🔢 Uzupełnij Zegar)
+- [x] Podtytuł kafelka pokazuje ostatni preset z localStorage
+- [x] Siatka kafelków: 2 kol. (domyślnie) → 3 kol. (≥540px)
 
 ---
 
@@ -616,8 +619,8 @@ FAZA 1 (profile + dane) ──► FAZA 2 (dashboard) ──► FAZA 3 (integracj
 | 4. Garderoba | ✅ Ukończona | 27.04.2026 | garderoba.html; purchaseItem/equipItem; podgląd live ClockRenderer; 4+3 przedmioty |
 | 5. Streak/Kalendarz | ✅ Ukończona | 27.04.2026 | updateStreak/isRusty; kalendarz 28 dni; anty-rdza na wszystkich tarczach |
 | 6. Odznaki | ✅ Ukończona | 06.04.2026 | ACHIEVEMENTS ×9; overlay kolejkowy; trofea.html; per profil |
-| 7. Spaced Repetition | ⬜ Nie rozpoczęta | — | — || 8. Integracja Demo-Gier | 🔨 W trakcie | — | roman-pairs.html ✓; digit-placer.html do zrobienia |
+| 7. Spaced Repetition | ⬜ Nie rozpoczęta | — | — || 8. Integracja Demo-Gier | ✅ Ukończona | 22.04.2026 | roman-pairs.html ✓; digit-placer-roman.html ✓; digit-placer-arabic.html ✓ |
 ---
 
 *Plan utworzony: 29.03.2026*
-*Ostatnia aktualizacja: 13.04.2026 — Faza 8.1: roman-pairs.html zintegrowana z game-state.js i dodana do szybka-gra.html*
+*Ostatnia aktualizacja: 22.04.2026 — Faza 8.2: digit-placer-roman.html i digit-placer-arabic.html (produkcja z game-state.js); szybka-gra.html: 2 nowe kafelki z dynamicznym podtytułem, responsywna siatka 2→3 kol., nowa kolejność kafelków*
