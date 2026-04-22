@@ -81,32 +81,55 @@
     .answer-btn.wrong         { background: #dc2626; border-color: #dc2626; color: #fff; }
     .answer-btn:disabled      { pointer-events: none; }
 
-    /* Przełącznik trybu cyfr */
-    .mode-row {
+    /* Settings modal — grids */
+    .settings-header {
       display: flex;
-      gap: var(--gap);
-      width: 100%;
-      margin-bottom: calc(var(--gap) * 0.5);
+      align-items: center;
+      justify-content: space-between;
+    }
+    .settings-title {
+      font-size: clamp(1rem, 2.5vmin, 1.4rem);
+      font-weight: 700;
+      color: #f0f0f0;
+    }
+    .settings-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .settings-section-label {
+      font-size: clamp(0.68rem, 1.4vmin, 0.82rem);
+      color: #888;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+    .settings-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(8px, 1.2vmin, 12px); }
+    .settings-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: clamp(8px, 1.2vmin, 12px); }
+    .settings-grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: clamp(8px, 1.2vmin, 12px); }
+    /* Active states override for difficulty */
+    .mode-toggle.diff-easy { background: #0a2a1a !important; border-color: #16a34a !important; color: #4ade80 !important; }
+    .mode-toggle.diff-hard { background: #2a0a0a !important; border-color: #dc2626 !important; color: #f87171 !important; }
+    /* Szerszy modal ustawień */
+    #settingsModal .modal-content {
+      width: min(520px, 96vw);
     }
 
-    .mode-btn {
-      flex: 1;
-      padding: clamp(8px, 1.2vmin, 14px);
-      background: #111;
-      border: 2px solid #222;
+    /* Play button */
+    .play-btn {
+      width: 100%;
+      padding: clamp(12px, 2vmin, 20px);
+      background: #bb86fc;
+      border: none;
       border-radius: var(--btn-radius);
-      color: #888;
-      font-size: clamp(0.85rem, 1.8vmin, 1.3rem);
-      font-weight: 600;
+      color: #000;
+      font-size: clamp(0.95rem, 2vmin, 1.3rem);
+      font-weight: 700;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: background 0.15s;
       -webkit-tap-highlight-color: transparent;
     }
-    .mode-btn.active {
-      background: #1a0a2e;
-      border-color: #bb86fc;
-      color: #bb86fc;
-    }
+    .play-btn:hover { background: #c9a0fd; }
 
     /* Przycisk restart */
     .restart-btn {
@@ -125,27 +148,7 @@
     }
     .restart-btn:hover { background: #1a1a1a; }
     .restart-btn.visible { display: block; }
-    /* Poziom trudności */
-    .diff-row {
-      display: flex;
-      gap: var(--gap);
-      width: 100%;
-    }
-    .diff-btn {
-      flex: 1;
-      padding: clamp(6px, 1vmin, 10px);
-      background: #111;
-      border: 2px solid #222;
-      border-radius: var(--btn-radius);
-      color: #888;
-      font-size: clamp(0.72rem, 1.5vmin, 1.1rem);
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .diff-btn[data-diff="easy"].active  { background: #0a2a1a; border-color: #16a34a; color: #4ade80; }
-    .diff-btn[data-diff="hard"].active  { background: #2a0a0a; border-color: #dc2626; color: #f87171; }
+
 
     /* Tryb trudny — cyfra zanika */
     @keyframes num-fade {
@@ -215,30 +218,7 @@
     }
     .finish-msg.visible { display: block; }
 
-    /* Toggle trybu wejścia */
-    .input-toggle-row {
-      display: flex;
-      gap: var(--gap);
-      width: 100%;
-    }
-    .input-toggle-btn {
-      flex: 1;
-      padding: clamp(6px, 1vmin, 10px);
-      background: #111;
-      border: 2px solid #222;
-      border-radius: var(--btn-radius);
-      color: #888;
-      font-size: clamp(0.72rem, 1.5vmin, 1.1rem);
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .input-toggle-btn.active {
-      background: #0a1a2e;
-      border-color: #2563eb;
-      color: #60a5fa;
-    }
+
 
     /* Wyświetlacz cyfr */
     .digital-input-display {
@@ -295,6 +275,44 @@
     .key:active { background: #222; }
     .key.key-confirm, .key.key-delete { background: #333; }
     .key.key-confirm:hover, .key.key-delete:hover { background: #444; }
+
+    /* Klawiatura rzymska — identyczny styl jak .key */
+    .keyboard-roman {
+      display: none;
+      flex-direction: column;
+      gap: clamp(8px, 1.5vmin, 16px);
+      width: 100%;
+    }
+    .keyboard-roman.active { display: flex; }
+    .keyboard-roman .keyboard-row { justify-content: center; }
+    .key-roman {
+      flex: 1;
+      min-height: clamp(56px, 9vmin, 100px);
+      background: #111;
+      border: 2px solid #222;
+      border-radius: clamp(10px, 1.5vmin, 16px);
+      font-size: clamp(1.2rem, 2.8vmin, 2.4rem);
+      font-weight: 600;
+      cursor: pointer;
+      color: #f0f0f0;
+      transition: background 0.15s, border-color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .key-roman:hover  { background: #1a1a1a; border-color: #444; }
+    .key-roman:active { background: #222; }
+    .key-roman.key-delete, .key-roman.key-confirm { background: #333; }
+    .key-roman.key-delete:hover, .key-roman.key-confirm:hover { background: #444; }
+
+    /* Display w trybie roman — większa czcionka szeryfowa */
+    .digital-input-display.roman-mode {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      font-size: clamp(1.8rem, 4.5vmin, 3.8rem);
+      color: #bb86fc;
+      letter-spacing: 0.12em;
+    }
 
     /* Ukryj sekcje */
     .input-section { display: none; }
@@ -419,7 +437,9 @@
         <polyline points="15 18 9 12 15 6"></polyline>
       </svg>
     </a>
-    <div class="topbar-right"></div>
+    <div class="topbar-right">
+      <button class="help-btn" id="settingsBtn" title="Ustawienia gry">&#9881;</button>
+    </div>
   </div>
 
   <!-- FAB ? -->
@@ -435,9 +455,7 @@
     <div class="hint-toast-bar" id="hintBar"></div>
   </div>
 
-  <div class="feedback-bar" id="hintArea">
-    Podświetlona pozycja miga na zegarze — wybierz pasującą cyfrę!
-  </div>
+  <div class="feedback-bar active" id="settingsDisplay">123 &middot; Wybór &middot; Łatwy</div>
 
   <div class="result-bar">
     <div class="feedback" id="feedback"></div>
@@ -446,12 +464,6 @@
   <div class="clock-wrap" id="clockContainer"></div>
 
   <div class="content-area">
-
-    <!-- Poziom trudności -->
-    <div class="diff-row">
-      <button class="diff-btn active" data-diff="easy">🟢 Łatwy</button>
-      <button class="diff-btn"        data-diff="hard">🔴 Trudny</button>
-    </div>
 
     <!-- Paski postępu -->
     <div class="star-progress" id="starProgress">
@@ -467,21 +479,6 @@
       </div>
     </div>
 
-    <!-- Przełącznik trybu cyfr -->
-    <div class="mode-row">
-      <button class="mode-btn active" id="modeArabic"  data-mode="arabic">123</button>
-      <button class="mode-btn"        id="modeRoman"   data-mode="roman">I II III</button>
-      <button class="mode-btn"        id="modeMinutes" data-mode="minutes">:05…</button>
-      <button class="mode-btn"        id="mode24h"     data-mode="24h">13–24</button>
-    </div>
-
-    <!-- Toggle wybór / klawiatura / zaznacz -->
-    <div class="input-toggle-row">
-      <button class="input-toggle-btn active" id="toggleChoice"   data-input="choice">🔢 Wybór</button>
-      <button class="input-toggle-btn"        id="toggleKeyboard" data-input="keyboard">⌨️ Klawiatura</button>
-      <button class="input-toggle-btn"        id="toggleTap"      data-input="tap">🎯 Zaznacz</button>
-    </div>
-
     <!-- Sekcja: wybór 4 odpowiedzi -->
     <div class="input-section active" id="sectionChoice">
       <div class="answers-grid" id="answersGrid"></div>
@@ -490,7 +487,9 @@
     <!-- Sekcja: klawiatura -->
     <div class="input-section" id="sectionKeyboard">
       <div class="digital-input-display" id="digitalDisplay"><span class="cursor">_</span></div>
-      <div class="keyboard">
+
+      <!-- Klawiatura numeryczna (arabskie / minuty / 24h) -->
+      <div class="keyboard" id="keyboardNumeric">
         <div class="keyboard-row">
           <button class="key" data-key="1">1</button>
           <button class="key" data-key="2">2</button>
@@ -512,6 +511,19 @@
           <button class="key key-confirm" data-key="ok">OK</button>
         </div>
       </div>
+
+      <!-- Klawiatura rzymska (tylko tryb roman) -->
+      <div class="keyboard-roman" id="keyboardRoman">
+        <div class="keyboard-row">
+          <button class="key-roman" data-rkey="I">I</button>
+          <button class="key-roman" data-rkey="V">V</button>
+          <button class="key-roman" data-rkey="X">X</button>
+        </div>
+        <div class="keyboard-row">
+          <button class="key-roman key-delete" data-rkey="delete">⌫</button>
+          <button class="key-roman key-confirm" data-rkey="ok">OK</button>
+        </div>
+      </div>
     </div>
 
     <!-- Sekcja: zaznacz na tarczy -->
@@ -527,8 +539,96 @@
 
   </div>
 
+  <!-- ===== MODAL USTAWIE&#323; ===== -->
+  <div class="modal" id="settingsModal">
+    <div class="modal-content">
+
+      <div class="settings-header">
+        <span class="settings-title">Ustawienia gry</span>
+        <button class="help-btn" id="settingsClose">&#x2715;</button>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-section-label">Cyfry</div>
+        <div class="settings-grid-4">
+          <button class="mode-toggle active" data-mode="arabic">123</button>
+          <button class="mode-toggle" data-mode="roman">I II III</button>
+          <button class="mode-toggle" data-mode="minutes">:05&hellip;</button>
+          <button class="mode-toggle" data-mode="24h">13&ndash;24</button>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-section-label">Tryb wej&#347;cia</div>
+        <div class="settings-grid-3">
+          <button class="mode-toggle active" data-input="choice">&#x1F522; Wyb&oacute;r</button>
+          <button class="mode-toggle" data-input="keyboard">&#x2328;&#xFE0F; Klaw.</button>
+          <button class="mode-toggle" data-input="tap">&#x1F3AF; Zaznacz</button>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-section-label">Trudno&#347;&#263;</div>
+        <div class="settings-grid-2">
+          <button class="mode-toggle diff-easy active" data-diff="easy">&#x1F7E2; &#x141;atwy</button>
+          <button class="mode-toggle" data-diff="hard">&#x1F534; Trudny</button>
+        </div>
+      </div>
+
+      <button class="play-btn" id="settingsPlay">&#x25BA; Zagraj!</button>
+
+      <div class="sound-toggle" id="soundToggleRow">
+        <span>Dźwięki</span>
+        <div class="toggle-switch" id="soundToggle"></div>
+      </div>
+
+    </div>
+  </div>
+
   <script src="clock-renderer.js"></script>
   <script>
+    // ===== AUDIO =====
+
+    let audioCtx = null;
+    let soundEnabled = localStorage.getItem('zegar_soundEnabled') !== 'false';
+
+    function initAudioContext() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playBeep(frequency, duration) {
+      if (!soundEnabled) return;
+      initAudioContext();
+      const osc  = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.frequency.value = frequency;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration / 1000);
+      osc.start(audioCtx.currentTime);
+      osc.stop(audioCtx.currentTime + duration / 1000);
+    }
+
+    function playSuccess() {
+      if (!soundEnabled) return;
+      initAudioContext();
+      [440, 660].forEach((freq, i) => {
+        const osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+        osc.connect(g); g.connect(audioCtx.destination);
+        osc.frequency.value = freq; osc.type = 'sine';
+        const t = audioCtx.currentTime + i * 0.13;
+        g.gain.setValueAtTime(0.1, t);
+        g.gain.exponentialRampToValueAtTime(0.01, t + 0.18);
+        osc.start(t); osc.stop(t + 0.18);
+      });
+    }
+
+    function playError() { playBeep(220, 300); }
+    function playClick() { playBeep(440, 50); }
+
     // ===== CONFIG =====
     const ROMAN = {
       1:'I', 2:'II', 3:'III', 4:'IV', 5:'V', 6:'VI',
@@ -586,13 +686,15 @@
 
     // ===== DOM =====
     const feedbackEl      = document.getElementById('feedback');
-    const hintArea        = document.getElementById('hintArea');
+    const settingsDisplay = document.getElementById('settingsDisplay');
     const spCorrectEl     = document.getElementById('spCorrect');
     const spCorrectTxtEl  = document.getElementById('spCorrectTxt');
     const spStreakEl      = document.getElementById('spStreak');
     const spStreakTxtEl   = document.getElementById('spStreakTxt');
     const answersGrid     = document.getElementById('answersGrid');
     const digitalDisplay  = document.getElementById('digitalDisplay');
+    const keyboardNumeric = document.getElementById('keyboardNumeric');
+    const keyboardRoman   = document.getElementById('keyboardRoman');
     const sectionChoice   = document.getElementById('sectionChoice');
     const sectionKeyboard = document.getElementById('sectionKeyboard');
     const sectionTap      = document.getElementById('sectionTap');
@@ -617,6 +719,14 @@
 
     // Ukryj wszystkie cyfry na starcie
     clock.setNumberStyle('none');
+
+    // ===== KEYBOARD SWITCH =====
+    function switchKeyboard() {
+      const isRoman = (mode === 'roman' && inputMode === 'keyboard');
+      keyboardNumeric.style.display = isRoman ? 'none' : '';
+      keyboardRoman.classList.toggle('active', isRoman);
+      digitalDisplay.classList.toggle('roman-mode', isRoman);
+    }
 
     // ===== HELPERS =====
     function getNumEl(pos) {
@@ -678,6 +788,7 @@
       finishMsg.classList.remove('visible');
       restartBtn.classList.remove('visible');
 
+      switchKeyboard();
       nextQuestion();
     }
 
@@ -768,6 +879,7 @@
         score++;
         streak++;
         updateBars();
+        playSuccess();
 
         // Pokaż cyfrę na zegarze
         placeDigit(currentPos);
@@ -781,6 +893,7 @@
         feedbackEl.className   = 'feedback bad';
         streak = 0;
         updateBars();
+        playError();
 
         // Pokaż gdzie była poprawna odpowiedź
         allBtns.forEach(b => {
@@ -868,6 +981,7 @@
         score++;
         streak++;
         updateBars();
+        playSuccess();
         setTimeout(() => {
           placeDigit(n);
           nextQuestion();
@@ -878,6 +992,7 @@
         feedbackEl.className   = 'feedback bad';
         streak = 0;
         updateBars();
+        playError();
         setTimeout(() => {
           el.classList.remove('tap-wrong');
           feedbackEl.textContent = '';
@@ -901,6 +1016,7 @@
       if (key === 'delete') {
         kbInput = kbInput.slice(0, -1);
         updateKbDisplay();
+        playClick();
         return;
       }
       if (key === 'ok') {
@@ -912,11 +1028,13 @@
       if (kbInput.length >= 2) return;
       kbInput += key;
       updateKbDisplay();
+      playClick();
     }
 
     function submitKbAnswer() {
-      const typed = parseInt(kbInput, 10);
-      const correct = parseInt(displayLabel(currentPos), 10);
+      const isRoman = (mode === 'roman');
+      const typed   = isRoman ? kbInput.trim().toUpperCase() : parseInt(kbInput, 10);
+      const correct = isRoman ? ROMAN[currentPos] : parseInt(displayLabel(currentPos), 10);
 
       if (typed === correct) {
         digitalDisplay.className = 'digital-input-display correct';
@@ -925,6 +1043,7 @@
         score++;
         streak++;
         updateBars();
+        playSuccess();
         locked = true;
 
         const targetEl = getNumEl(currentPos);
@@ -937,10 +1056,11 @@
         setTimeout(nextQuestion, 700);
       } else {
         digitalDisplay.className = 'digital-input-display wrong';
-        feedbackEl.textContent = `✗ To ${typed}, nie ${displayLabel(currentPos)}`;
+        feedbackEl.textContent = `✗ To ${typed || '?'}, nie ${displayLabel(currentPos)}`;
         feedbackEl.className   = 'feedback bad';
         streak = 0;
         updateBars();
+        playError();
         kbInput = '';
         setTimeout(() => {
           digitalDisplay.className = 'digital-input-display';
@@ -951,54 +1071,141 @@
       }
     }
 
-    // Kliknięcia klawiszy
+    // Kliknięcia klawiszy numerycznych
     document.querySelectorAll('.key').forEach(k => {
       k.addEventListener('click', () => handleKeyPress(k.dataset.key));
       k.style.webkitTapHighlightColor = 'transparent';
     });
 
+    // Kliknięcia klawiszy rzymskich
+    document.querySelectorAll('[data-rkey]').forEach(k => {
+      k.addEventListener('click', () => handleRomanKeyPress(k.dataset.rkey));
+      k.style.webkitTapHighlightColor = 'transparent';
+    });
+
+    function handleRomanKeyPress(key) {
+      if (locked) return;
+      if (key === 'delete') {
+        kbInput = kbInput.slice(0, -1);
+        updateKbDisplay();
+        return;
+      }
+      if (key === 'ok') {
+        if (!kbInput.length) return;
+        submitKbAnswer();
+        return;
+      }
+      // max 4 znaki (VIII = 4 litery)
+      if (kbInput.length >= 4) return;
+      kbInput += key;
+      updateKbDisplay();
+      playClick();
+    }
+
     // Fizyczna klawiatura
     document.addEventListener('keydown', e => {
       if (inputMode !== 'keyboard') return;
-      if (e.key >= '0' && e.key <= '9') handleKeyPress(e.key);
-      else if (e.key === 'Backspace')    handleKeyPress('delete');
-      else if (e.key === 'Enter')        handleKeyPress('ok');
+      if (mode === 'roman') {
+        const k = e.key.toUpperCase();
+        if (k === 'I' || k === 'V' || k === 'X') handleRomanKeyPress(k);
+        else if (e.key === 'Backspace') handleRomanKeyPress('delete');
+        else if (e.key === 'Enter')     handleRomanKeyPress('ok');
+      } else {
+        if (e.key >= '0' && e.key <= '9') handleKeyPress(e.key);
+        else if (e.key === 'Backspace')   handleKeyPress('delete');
+        else if (e.key === 'Enter')       handleKeyPress('ok');
+      }
     });
 
     // ===== INPUT MODE TOGGLE =====
-    document.querySelectorAll('.input-toggle-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        inputMode = btn.dataset.input;
-        document.querySelectorAll('.input-toggle-btn').forEach(b =>
-          b.classList.toggle('active', b === btn)
-        );
-        sectionChoice.classList.toggle('active',   inputMode === 'choice');
-        sectionKeyboard.classList.toggle('active', inputMode === 'keyboard');
-        sectionTap.classList.toggle('active',      inputMode === 'tap');
-        startGame();
-      });
-    });
+    // (obsługiwany przez modal — patrz sekcja SETTINGS MODAL poniżej)
 
     // ===== DIFFICULTY TOGGLE =====
-    document.querySelectorAll('.diff-btn').forEach(btn => {
+    // (obsługiwany przez modal)
+
+    // ===== MODE SWITCHER =====
+    // (obsługiwany przez modal)
+
+    // ===== SETTINGS MODAL =====
+    const settingsModal = document.getElementById('settingsModal');
+    const settingsBtn   = document.getElementById('settingsBtn');
+    const settingsClose = document.getElementById('settingsClose');
+    const settingsPlay  = document.getElementById('settingsPlay');
+    const soundToggleEl = document.getElementById('soundToggle');
+
+    // Inicjalizacja stanu toggle dźwięku
+    soundToggleEl.classList.toggle('active', soundEnabled);
+
+    function openSettings() { settingsModal.classList.add('active'); }
+    function closeSettings() { settingsModal.classList.remove('active'); }
+
+    settingsBtn.addEventListener('click', openSettings);
+    settingsClose.addEventListener('click', closeSettings);
+    settingsModal.addEventListener('click', e => {
+      if (e.target === settingsModal) closeSettings();
+    });
+
+    // Toggle dźwięku
+    document.getElementById('soundToggleRow').addEventListener('click', () => {
+      soundEnabled = !soundEnabled;
+      localStorage.setItem('zegar_soundEnabled', soundEnabled);
+      soundToggleEl.classList.toggle('active', soundEnabled);
+      if (soundEnabled) { initAudioContext(); playBeep(660, 100); }
+    });
+
+    settingsPlay.addEventListener('click', () => {
+      closeSettings();
+      sectionChoice.classList.toggle('active',   inputMode === 'choice');
+      sectionKeyboard.classList.toggle('active', inputMode === 'keyboard');
+      sectionTap.classList.toggle('active',      inputMode === 'tap');
+      startGame();
+    });
+
+    // Cyfry
+    document.querySelectorAll('[data-mode]').forEach(btn => {
       btn.addEventListener('click', () => {
-        difficulty = btn.dataset.diff;
-        document.querySelectorAll('.diff-btn').forEach(b =>
+        mode = btn.dataset.mode;
+        document.querySelectorAll('[data-mode]').forEach(b =>
           b.classList.toggle('active', b === btn)
         );
-        startGame();
+        updateSettingsDisplay();
+        if (inputMode === 'keyboard') switchKeyboard();
       });
     });
 
-    // ===== MODE SWITCHER =====
-    const modeBtns = document.querySelectorAll('.mode-btn');
-    modeBtns.forEach(btn => {
+    // Tryb wejścia
+    document.querySelectorAll('[data-input]').forEach(btn => {
       btn.addEventListener('click', () => {
-        mode = btn.dataset.mode;
-        modeBtns.forEach(b => b.classList.toggle('active', b === btn));
-        startGame();
+        inputMode = btn.dataset.input;
+        document.querySelectorAll('[data-input]').forEach(b =>
+          b.classList.toggle('active', b === btn)
+        );
+        updateSettingsDisplay();
+        if (inputMode === 'keyboard') switchKeyboard();
       });
     });
+
+    // Trudność
+    document.querySelectorAll('[data-diff]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        difficulty = btn.dataset.diff;
+        document.querySelectorAll('[data-diff]').forEach(b => {
+          b.classList.remove('active', 'diff-easy', 'diff-hard');
+          if (b === btn) {
+            b.classList.add('active');
+            b.classList.add(difficulty === 'easy' ? 'diff-easy' : 'diff-hard');
+          }
+        });
+        updateSettingsDisplay();
+      });
+    });
+
+    function updateSettingsDisplay() {
+      const ml = { arabic:'123', roman:'I II III', minutes:':05…', '24h':'13–24' };
+      const il = { choice:'Wybór', keyboard:'Klawiatura', tap:'Zaznacz' };
+      const dl = { easy:'Łatwy', hard:'Trudny' };
+      settingsDisplay.textContent = `${ml[mode]} · ${il[inputMode]} · ${dl[difficulty]}`;
+    }
 
     // ===== RESTART =====
     restartBtn.addEventListener('click', startGame);

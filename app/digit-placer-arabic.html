@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Uzupełnij Zegar — Mistrz Czasu</title>
+  <link rel="stylesheet" href="clock-styles.css" />
+  <link rel="stylesheet" href="layout.css" />
+  <style>
+    /* ===== DIGIT-PLACER-ARABIC — page-specific styles ===== */
+
+    .clock .num.target {
+      font-size: 0 !important;
+      visibility: visible !important;
+      color: transparent;
+      background: rgba(187, 134, 252, 0.25);
+      border: 2px solid #bb86fc;
+      border-radius: 50%;
+      width:  clamp(28px, 5vmin, 52px);
+      height: clamp(28px, 5vmin, 52px);
+      display: flex; align-items: center; justify-content: center;
+      animation: pulse-target 1s ease-in-out infinite;
+      transform: translate(-50%, -55%);
+    }
+    .clock .num.placed {
+      visibility: visible !important;
+      color: #16a34a;
+      animation: pop-in 0.3s ease-out;
+    }
+    @keyframes pulse-target {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(187, 134, 252, 0.6); }
+      50%       { box-shadow: 0 0 0 8px rgba(187, 134, 252, 0); }
+    }
+    @keyframes pop-in {
+      0%   { transform: translate(-50%, -55%) scale(0.5); opacity: 0; }
+      70%  { transform: translate(-50%, -55%) scale(1.2); }
+      100% { transform: translate(-50%, -55%) scale(1);   opacity: 1; }
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%       { transform: translateX(-8px); }
+      40%       { transform: translateX(8px); }
+      60%       { transform: translateX(-6px); }
+      80%       { transform: translateX(6px); }
+    }
+    .answer-btn.shake { animation: shake 0.35s ease-out; }
+
+    .answers-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: var(--gap); width: 100%;
+    }
+    .answer-btn {
+      min-height: var(--btn-height);
+      background: #111; border: 2px solid #222;
+      border-radius: var(--btn-radius);
+      font-size: var(--btn-font); font-weight: 600;
+      cursor: pointer; color: #f0f0f0;
+      transition: background 0.15s, border-color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .answer-btn:hover    { background: #1a1a1a; border-color: #444; }
+    .answer-btn.correct  { background: #16a34a; border-color: #16a34a; color: #fff; }
+    .answer-btn.wrong    { background: #dc2626; border-color: #dc2626; color: #fff; }
+    .answer-btn:disabled { pointer-events: none; }
+
+    /* Settings modal */
+    .settings-header { display: flex; align-items: center; justify-content: space-between; }
+    .settings-title  { font-size: clamp(1rem, 2.5vmin, 1.4rem); font-weight: 700; color: #f0f0f0; }
+    .settings-group  { display: flex; flex-direction: column; gap: 10px; }
+    .settings-section-label {
+      font-size: clamp(0.68rem, 1.4vmin, 0.82rem);
+      color: #888; font-weight: 600;
+      letter-spacing: 0.07em; text-transform: uppercase;
+    }
+    .settings-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(8px, 1.2vmin, 12px); }
+    .settings-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: clamp(8px, 1.2vmin, 12px); }
+    .mode-toggle.diff-easy { background: #0a2a1a !important; border-color: #16a34a !important; color: #4ade80 !important; }
+    .mode-toggle.diff-hard { background: #2a0a0a !important; border-color: #dc2626 !important; color: #f87171 !important; }
+    #settingsModal .modal-content { width: min(520px, 96vw); }
+
+    .play-btn {
+      width: 100%; padding: clamp(12px, 2vmin, 20px);
+      background: #bb86fc; border: none;
+      border-radius: var(--btn-radius); color: #000;
+      font-size: clamp(0.95rem, 2vmin, 1.3rem); font-weight: 700;
+      cursor: pointer; transition: background 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .play-btn:hover { background: #c9a0fd; }
+
+    .restart-btn {
+      width: 100%; padding: clamp(10px, 1.5vmin, 18px);
+      background: #111; border: 2px solid #333;
+      border-radius: var(--btn-radius); color: #f0f0f0;
+      font-size: clamp(0.9rem, 1.8vmin, 1.4rem); font-weight: 600;
+      cursor: pointer; transition: background 0.15s;
+      -webkit-tap-highlight-color: transparent; display: none;
+    }
+    .restart-btn:hover   { background: #1a1a1a; }
+    .restart-btn.visible { display: block; }
+
+    @keyframes num-fade { 0%{opacity:1} 20%{opacity:1} 100%{opacity:0} }
+    .clock .num.fading { visibility: visible !important; animation: num-fade 2s ease-out forwards; }
+
+    .star-progress {
+      display: flex; flex-direction: column;
+      gap: clamp(5px, 1vmin, 8px); width: 100%;
+      padding: clamp(8px, 1.3vmin, 14px) clamp(10px, 1.5vmin, 16px);
+      background: #0d0d0d; border: 1px solid #222; border-radius: var(--btn-radius);
+    }
+    .spi-row    { display: flex; align-items: center; gap: clamp(6px, 1vmin, 10px); }
+    .spi-label  { font-size: clamp(0.65rem, 1.3vmin, 0.85rem); color: #888; width: clamp(68px, 11vmin, 90px); flex-shrink: 0; }
+    .spi-track  { flex: 1; height: clamp(6px, 1vmin, 8px); background: #222; border-radius: 4px; overflow: hidden; }
+    .spi-fill   { height: 100%; border-radius: 4px; background: #bb86fc; transition: width 0.35s ease; width: 0%; }
+    .spi-fill.spi-streak { background: #f0c040; }
+    .spi-fill.done       { background: #16a34a !important; transition: none; }
+    .spi-count  { font-size: clamp(0.65rem, 1.3vmin, 0.85rem); color: #888; min-width: 2.5em; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+
+    .finish-msg { display: none; text-align: center; font-size: clamp(1rem, 2.2vmin, 1.8rem); color: #bb86fc; font-weight: 700; padding: clamp(8px, 1.5vmin, 16px) 0; }
+    .finish-msg.visible { display: block; }
+
+    .digital-input-display {
+      width: 100%; min-height: var(--btn-height);
+      background: #111; border: 2px solid #222;
+      border-radius: var(--btn-radius);
+      font-size: clamp(2rem, 5vmin, 4rem); font-weight: 700; color: #f0f0f0;
+      display: flex; align-items: center; justify-content: center;
+      letter-spacing: 0.1em; font-family: 'Consolas', 'Courier New', monospace;
+      transition: border-color 0.2s, background 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .digital-input-display.correct { background: #16a34a; border-color: #16a34a; }
+    .digital-input-display.wrong   { background: #dc2626; border-color: #dc2626; }
+    .cursor { animation: blink 1s infinite; }
+    @keyframes blink { 0%,50%{opacity:1} 51%,100%{opacity:0} }
+
+    .keyboard { display: flex; flex-direction: column; gap: clamp(8px, 1.5vmin, 16px); width: 100%; }
+    .keyboard-row { display: flex; gap: clamp(8px, 1.5vmin, 16px); justify-content: center; }
+    .key {
+      flex: 1; min-height: clamp(56px, 9vmin, 100px);
+      background: #111; border: 2px solid #222;
+      border-radius: clamp(10px, 1.5vmin, 16px);
+      font-size: clamp(1.2rem, 2.8vmin, 2.4rem); font-weight: 600;
+      cursor: pointer; color: #f0f0f0;
+      transition: background 0.15s, border-color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .key:hover  { background: #1a1a1a; border-color: #444; }
+    .key:active { background: #222; }
+    .key.key-confirm, .key.key-delete { background: #333; }
+    .key.key-confirm:hover, .key.key-delete:hover { background: #444; }
+
+    .input-section { display: none; }
+    .input-section.active { display: contents; }
+    .question-card {
+      width: 100%; min-height: var(--btn-height);
+      background: #111; border: 2px solid #333; border-radius: var(--btn-radius);
+      display: flex; align-items: center; justify-content: center;
+      font-size: clamp(2.2rem, 6vmin, 5rem); font-weight: 900; color: #f0f0f0;
+      letter-spacing: 0.05em; user-select: none;
+    }
+    .question-card.pop { animation: q-pop 0.35s ease-out; }
+    @keyframes q-pop { 0%{transform:scale(1)} 45%{transform:scale(1.07)} 100%{transform:scale(1)} }
+
+    .tap-active .overlay { pointer-events: none !important; }
+    .tap-active .num.zone { pointer-events: auto !important; }
+    .clock .num.zone {
+      pointer-events: auto; visibility: visible !important; font-size: 0 !important;
+      width: clamp(32px, 6vmin, 60px); height: clamp(32px, 6vmin, 60px);
+      border-radius: 50%; background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.10);
+      display: flex; align-items: center; justify-content: center;
+      transform: translate(-50%, -55%); cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s, border-color 0.15s, transform 0.15s;
+    }
+    .clock .num.zone:hover { background: rgba(187,134,252,0.15); border-color: rgba(187,134,252,0.4); transform: translate(-50%,-55%) scale(1.15); }
+    .clock .num.zone.tap-correct { background: rgba(22,163,74,0.3); border-color: #16a34a; animation: zone-pop 0.35s ease-out forwards; }
+    .clock .num.zone.tap-wrong   { background: rgba(220,38,38,0.3); border-color: #dc2626; animation: zone-shake 0.35s ease-out; }
+    @keyframes zone-pop   { 0%{transform:translate(-50%,-55%) scale(0.8)} 60%{transform:translate(-50%,-55%) scale(1.2)} 100%{transform:translate(-50%,-55%) scale(1)} }
+    @keyframes zone-shake { 0%,100%{transform:translate(-50%,-55%) translateX(0)} 20%{transform:translate(-48%,-55%)} 40%{transform:translate(-52%,-55%)} 60%{transform:translate(-48%,-55%)} 80%{transform:translate(-52%,-55%)} }
+
+    .fab-hint {
+      position: fixed; bottom: 24px; right: 20px; z-index: 300;
+      width: 48px; height: 48px; border-radius: 50%;
+      background: #111; border: 2px solid #333; color: #555;
+      font-size: 1.3rem; font-weight: 700; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: color 0.2s, border-color 0.2s, transform 0.2s;
+      -webkit-tap-highlight-color: transparent;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+    }
+    .fab-hint:hover  { color: #f0f0f0; border-color: #555; }
+    .fab-hint.active { border-color: var(--accent-color); color: var(--accent-color); transform: rotate(15deg); }
+    .hint-toast {
+      position: fixed; bottom: 84px; left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      z-index: 299; width: min(360px, calc(100vw - 40px));
+      background: #1a1a1a; border: 1px solid #333; border-radius: 16px;
+      padding: 14px 18px; display: flex; align-items: flex-start; gap: 12px;
+      overflow: hidden; opacity: 0; pointer-events: none;
+      transition: opacity 0.22s ease, transform 0.22s ease;
+    }
+    .hint-toast.visible { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+    .hint-toast-icon  { font-size: 1.2rem; flex-shrink: 0; margin-top: 2px; }
+    .hint-toast-body  { flex: 1; }
+    .hint-toast-title { font-size: 0.72rem; font-weight: 700; color: var(--accent-color); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .hint-toast-msg   { font-size: 0.88rem; color: #ccc; line-height: 1.5; }
+    .hint-toast-bar   { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--accent-color); border-radius: 0 0 16px 16px; width: 100%; transform-origin: left; transform: scaleX(0); }
+    .hint-toast.auto-close .hint-toast-bar { transform: scaleX(1); transition: transform 10s linear; }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <a href="szybka-gra.html" title="Wróć">
+      <svg class="icon-btn" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"></polyline>
+      </svg>
+    </a>
+    <div class="topbar-right">
+      <button class="help-btn" id="settingsBtn" title="Ustawienia gry">&#9881;</button>
+    </div>
+  </div>
+
+  <button class="fab-hint" id="fabHint" onclick="toggleHint()">?</button>
+  <div class="hint-toast" id="hintToast">
+    <span class="hint-toast-icon">💡</span>
+    <div class="hint-toast-body">
+      <div class="hint-toast-title">Jak to działa?</div>
+      <div class="hint-toast-msg">Podświetlona pozycja miga na zegarze. Wybierz, wpisz lub kliknij właściwą cyfrę. Możesz ćwiczyć godziny, minuty lub czas w formacie 24h!</div>
+    </div>
+    <div class="hint-toast-bar" id="hintBar"></div>
+  </div>
+
+  <div class="feedback-bar active" id="settingsDisplay">123 · Wybór · Łatwy</div>
+  <div class="result-bar"><div class="feedback" id="feedback"></div></div>
+  <div class="clock-wrap" id="clockContainer"></div>
+
+  <div class="content-area">
+
+    <div class="star-progress" id="starProgress">
+      <div class="spi-row">
+        <span class="spi-label">Poprawne</span>
+        <div class="spi-track"><div class="spi-fill" id="spCorrect"></div></div>
+        <span class="spi-count" id="spCorrectTxt">0 / 12</span>
+      </div>
+      <div class="spi-row">
+        <span class="spi-label">Seria</span>
+        <div class="spi-track"><div class="spi-fill spi-streak" id="spStreak"></div></div>
+        <span class="spi-count" id="spStreakTxt">0</span>
+      </div>
+    </div>
+
+    <div class="input-section active" id="sectionChoice">
+      <div class="answers-grid" id="answersGrid"></div>
+    </div>
+
+    <div class="input-section" id="sectionKeyboard">
+      <div class="digital-input-display" id="digitalDisplay"><span class="cursor">_</span></div>
+      <div class="keyboard" id="keyboardNumeric">
+        <div class="keyboard-row">
+          <button class="key" data-key="1">1</button>
+          <button class="key" data-key="2">2</button>
+          <button class="key" data-key="3">3</button>
+        </div>
+        <div class="keyboard-row">
+          <button class="key" data-key="4">4</button>
+          <button class="key" data-key="5">5</button>
+          <button class="key" data-key="6">6</button>
+        </div>
+        <div class="keyboard-row">
+          <button class="key" data-key="7">7</button>
+          <button class="key" data-key="8">8</button>
+          <button class="key" data-key="9">9</button>
+        </div>
+        <div class="keyboard-row">
+          <button class="key key-delete" data-key="delete">⌫</button>
+          <button class="key" data-key="0">0</button>
+          <button class="key key-confirm" data-key="ok">OK</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-section" id="sectionTap">
+      <div class="question-card" id="questionCard">—</div>
+    </div>
+
+    <div class="finish-msg" id="finishMsg">🎉 Uzupełniłeś cały zegar!</div>
+    <button class="restart-btn" id="restartBtn">↺ Zagraj ponownie</button>
+  </div>
+
+  <!-- MODAL USTAWIEŃ -->
+  <div class="modal" id="settingsModal">
+    <div class="modal-content">
+      <div class="settings-header">
+        <span class="settings-title">Ustawienia — Uzupełnij Zegar</span>
+        <button class="help-btn" id="settingsClose">&#x2715;</button>
+      </div>
+      <div class="settings-group">
+        <div class="settings-section-label">Cyfry</div>
+        <div class="settings-grid-3">
+          <button class="mode-toggle active" data-mode="arabic">123</button>
+          <button class="mode-toggle" data-mode="minutes">:05&hellip;</button>
+          <button class="mode-toggle" data-mode="24h">13&ndash;24</button>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-section-label">Tryb wejścia</div>
+        <div class="settings-grid-3">
+          <button class="mode-toggle active" data-input="choice">&#x1F522; Wybór</button>
+          <button class="mode-toggle" data-input="keyboard">&#x2328;&#xFE0F; Klaw.</button>
+          <button class="mode-toggle" data-input="tap">&#x1F3AF; Zaznacz</button>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-section-label">Trudność</div>
+        <div class="settings-grid-2">
+          <button class="mode-toggle diff-easy active" data-diff="easy">&#x1F7E2; Łatwy</button>
+          <button class="mode-toggle" data-diff="hard">&#x1F534; Trudny</button>
+        </div>
+      </div>
+      <button class="play-btn" id="settingsPlay">&#x25BA; Zagraj!</button>
+      <div class="sound-toggle" id="soundToggleRow">
+        <span>Dźwięki</span>
+        <div class="toggle-switch" id="soundToggle"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="clock-renderer.js"></script>
+  <script src="game-state.js"></script>
+  <script>
+    // ===== STORAGE KEY =====
+    const SETTINGS_KEY = 'zegar_digitPlacer_arabic';
+
+    // ===== AUDIO =====
+    let audioCtx = null;
+    let soundEnabled = localStorage.getItem('zegar_soundEnabled') !== 'false';
+
+    function initAudioContext() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+    function playBeep(frequency, duration) {
+      if (!soundEnabled) return;
+      initAudioContext();
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.frequency.value = frequency; osc.type = 'sine';
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration / 1000);
+      osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + duration / 1000);
+    }
+    function playSuccess() {
+      if (!soundEnabled) return;
+      initAudioContext();
+      [440, 660].forEach((freq, i) => {
+        const osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+        osc.connect(g); g.connect(audioCtx.destination);
+        osc.frequency.value = freq; osc.type = 'sine';
+        const t = audioCtx.currentTime + i * 0.13;
+        g.gain.setValueAtTime(0.1, t);
+        g.gain.exponentialRampToValueAtTime(0.01, t + 0.18);
+        osc.start(t); osc.stop(t + 0.18);
+      });
+    }
+    function playError() { playBeep(220, 300); }
+    function playClick() { playBeep(440, 50); }
+
+    // ===== CONFIG =====
+    function h24label(n) { return n === 12 ? 24 : n + 12; }
+    function minLabel(n)  { return n === 12 ? 0 : n * 5; }
+
+    // ===== STATE =====
+    const savedSettings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+    let mode       = savedSettings.mode       || 'arabic';
+    let inputMode  = savedSettings.inputMode  || 'choice';
+    let difficulty = savedSettings.difficulty || 'easy';
+    let remaining  = [];
+    let currentPos = null;
+    let score      = 0;
+    let streak     = 0;
+    let locked     = false;
+    let kbInput    = '';
+
+    // ===== DOM =====
+    const feedbackEl      = document.getElementById('feedback');
+    const settingsDisplay = document.getElementById('settingsDisplay');
+    const spCorrectEl     = document.getElementById('spCorrect');
+    const spCorrectTxtEl  = document.getElementById('spCorrectTxt');
+    const spStreakEl      = document.getElementById('spStreak');
+    const spStreakTxtEl   = document.getElementById('spStreakTxt');
+    const answersGrid     = document.getElementById('answersGrid');
+    const digitalDisplay  = document.getElementById('digitalDisplay');
+    const sectionChoice   = document.getElementById('sectionChoice');
+    const sectionKeyboard = document.getElementById('sectionKeyboard');
+    const sectionTap      = document.getElementById('sectionTap');
+    const questionCard    = document.getElementById('questionCard');
+    const finishMsg       = document.getElementById('finishMsg');
+    const restartBtn      = document.getElementById('restartBtn');
+
+    // ===== CLOCK SETUP =====
+    const clockContainer = document.getElementById('clockContainer');
+    const clock = new ClockRenderer(clockContainer, {
+      size: 'normal', interactive: false, showBrand: true,
+      showDigital: false, showDate: false, showSecondHand: false,
+      showBgControls: false, handColor: 'white',
+    });
+    clock.setBackground('solid');
+    clock.setTime(10, 10);
+    clock.setNumberStyle('none');
+
+    // ===== HELPERS =====
+    function getNumEl(pos) { return clockContainer.querySelector(`.num.n${pos}`); }
+    function displayLabel(n) {
+      if (mode === 'minutes') return String(minLabel(n));
+      if (mode === '24h')     return String(h24label(n));
+      return String(n);
+    }
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+    function generateDistractors(correct) {
+      return shuffle([1,2,3,4,5,6,7,8,9,10,11,12].filter(n => n !== correct)).slice(0, 3);
+    }
+    function saveSettings() {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify({ mode, inputMode, difficulty }));
+    }
+
+    // ===== GAME FLOW =====
+    function startGame() {
+      score     = 0;
+      streak    = 0;
+      remaining = shuffle([1,2,3,4,5,6,7,8,9,10,11,12]);
+      locked    = false;
+      clock.setNumberStyle('none');
+      [1,2,3,4,5,6,7,8,9,10,11,12].forEach(n => {
+        const el = getNumEl(n); if (!el) return;
+        el.classList.remove('placed','target','zone','tap-correct','tap-wrong','fading');
+        el.style.visibility = ''; el.style.fontSize = ''; el.textContent = '';
+      });
+      if (inputMode === 'tap') { setupTapZones(); clockContainer.classList.add('tap-active'); }
+      else { clockContainer.classList.remove('tap-active'); }
+      feedbackEl.textContent = ''; feedbackEl.className = 'feedback';
+      updateBars();
+      finishMsg.classList.remove('visible');
+      restartBtn.classList.remove('visible');
+      nextQuestion();
+    }
+
+    function nextQuestion() {
+      if (remaining.length === 0) { finishRound(); return; }
+      currentPos = remaining.shift();
+      locked     = false;
+      kbInput    = '';
+      if (difficulty === 'hard') {
+        [1,2,3,4,5,6,7,8,9,10,11,12].forEach(n => {
+          const el = getNumEl(n);
+          if (el && el.classList.contains('fading')) { el.classList.remove('fading'); el.style.visibility = ''; el.textContent = ''; }
+        });
+      }
+      [1,2,3,4,5,6,7,8,9,10,11,12].forEach(n => { const el = getNumEl(n); if (el) el.classList.remove('target'); });
+      if (inputMode === 'tap') {
+        questionCard.textContent = displayLabel(currentPos);
+        questionCard.classList.remove('pop'); void questionCard.offsetWidth; questionCard.classList.add('pop');
+      } else {
+        const targetEl = getNumEl(currentPos);
+        if (targetEl) { targetEl.classList.add('target'); targetEl.textContent = ''; }
+      }
+      if (inputMode === 'choice') {
+        const choices = shuffle([currentPos, ...generateDistractors(currentPos)]);
+        answersGrid.innerHTML = '';
+        choices.forEach(n => {
+          const btn = document.createElement('button');
+          btn.className = 'answer-btn'; btn.textContent = displayLabel(n); btn.dataset.value = n;
+          btn.addEventListener('click', () => handleAnswer(n, btn));
+          answersGrid.appendChild(btn);
+        });
+      } else if (inputMode === 'keyboard') { updateKbDisplay(); }
+    }
+
+    function updateBars() {
+      const pct = (score / 12) * 100;
+      spCorrectEl.style.width    = pct + '%';
+      spCorrectTxtEl.textContent = `${score} / 12`;
+      if (score === 12) spCorrectEl.classList.add('done');
+      const sPct = Math.min((streak / 5) * 100, 100);
+      spStreakEl.style.width    = sPct + '%';
+      spStreakTxtEl.textContent = String(streak);
+    }
+
+    function handleAnswer(n, btn) {
+      if (locked) return;
+      locked = true;
+      const allBtns = answersGrid.querySelectorAll('.answer-btn');
+      if (n === currentPos) {
+        btn.classList.add('correct');
+        feedbackEl.textContent = '✓ Świetnie!'; feedbackEl.className = 'feedback ok';
+        score++; streak++; updateBars(); playSuccess();
+        reportQuickGameResult(true);
+        placeDigit(currentPos);
+        setTimeout(nextQuestion, 700);
+      } else {
+        btn.classList.add('wrong','shake');
+        feedbackEl.textContent = '✗ Nie tutaj!'; feedbackEl.className = 'feedback bad';
+        streak = 0; updateBars(); playError();
+        reportQuickGameResult(false);
+        allBtns.forEach(b => { if (parseInt(b.dataset.value) === currentPos) b.classList.add('correct'); });
+        setTimeout(() => {
+          btn.classList.remove('shake'); locked = false;
+          allBtns.forEach(b => { if (parseInt(b.dataset.value) !== currentPos) b.classList.remove('wrong','correct'); });
+        }, 800);
+      }
+    }
+
+    function finishRound() {
+      answersGrid.innerHTML = ''; kbInput = ''; updateKbDisplay();
+      feedbackEl.textContent = ''; feedbackEl.className = 'feedback';
+      [1,2,3,4,5,6,7,8,9,10,11,12].forEach(n => { const el = getNumEl(n); if (el) el.classList.remove('target'); });
+      finishMsg.textContent = score === 12 ? '🎉 Zegar uzupełniony bezbłędnie!' : `✅ Gotowe! Poprawne: ${score} / 12`;
+      finishMsg.classList.add('visible'); restartBtn.classList.add('visible');
+    }
+
+    function placeDigit(pos) {
+      const el = getNumEl(pos); if (!el) return;
+      el.classList.remove('target','zone','tap-correct');
+      el.textContent = displayLabel(pos);
+      el.style.visibility = 'visible'; el.style.fontSize = '';
+      if (difficulty === 'easy') { el.classList.add('placed'); }
+      else { el.classList.remove('placed'); void el.offsetWidth; el.classList.add('fading'); }
+    }
+
+    function setupTapZones() {
+      [1,2,3,4,5,6,7,8,9,10,11,12].forEach(n => {
+        const el = getNumEl(n); if (!el) return;
+        el.classList.add('zone'); el.textContent = '';
+        const handler = () => handleZoneTap(n, el);
+        el.removeEventListener('click', el._tapHandler);
+        el._tapHandler = handler; el.addEventListener('click', handler);
+      });
+    }
+
+    function handleZoneTap(n, el) {
+      if (locked) return;
+      if (el.classList.contains('placed') || el.classList.contains('fading')) return;
+      if (n === currentPos) {
+        locked = true;
+        el.classList.add('tap-correct');
+        feedbackEl.textContent = '✓ Świetnie!'; feedbackEl.className = 'feedback ok';
+        score++; streak++; updateBars(); playSuccess();
+        reportQuickGameResult(true);
+        setTimeout(() => { placeDigit(n); nextQuestion(); }, 500);
+      } else {
+        el.classList.add('tap-wrong');
+        feedbackEl.textContent = '✗ Nie tutaj!'; feedbackEl.className = 'feedback bad';
+        streak = 0; updateBars(); playError();
+        reportQuickGameResult(false);
+        setTimeout(() => { el.classList.remove('tap-wrong'); feedbackEl.textContent = ''; feedbackEl.className = 'feedback'; }, 600);
+      }
+    }
+
+    function updateKbDisplay() {
+      if (!digitalDisplay) return;
+      digitalDisplay.className = 'digital-input-display';
+      if (!kbInput.length) { digitalDisplay.innerHTML = '<span class="cursor">_</span>'; }
+      else { digitalDisplay.textContent = kbInput; }
+    }
+
+    function handleKeyPress(key) {
+      if (locked) return;
+      if (key === 'delete') { kbInput = kbInput.slice(0, -1); updateKbDisplay(); playClick(); return; }
+      if (key === 'ok')     { if (!kbInput.length) return; submitKbAnswer(); return; }
+      if (kbInput.length >= 2) return;
+      kbInput += key; updateKbDisplay(); playClick();
+    }
+
+    function submitKbAnswer() {
+      const typed   = parseInt(kbInput, 10);
+      const correct = parseInt(displayLabel(currentPos), 10);
+      if (typed === correct) {
+        digitalDisplay.className = 'digital-input-display correct';
+        feedbackEl.textContent = '✓ Świetnie!'; feedbackEl.className = 'feedback ok';
+        score++; streak++; updateBars(); playSuccess(); locked = true;
+        reportQuickGameResult(true);
+        const targetEl = getNumEl(currentPos);
+        if (targetEl) { targetEl.classList.remove('target'); targetEl.textContent = displayLabel(currentPos); targetEl.style.visibility = 'visible'; targetEl.classList.add('placed'); }
+        setTimeout(nextQuestion, 700);
+      } else {
+        digitalDisplay.className = 'digital-input-display wrong';
+        feedbackEl.textContent = `✗ To ${typed || '?'}, nie ${displayLabel(currentPos)}`;
+        feedbackEl.className = 'feedback bad';
+        streak = 0; updateBars(); playError();
+        reportQuickGameResult(false);
+        kbInput = '';
+        setTimeout(() => { updateKbDisplay(); feedbackEl.textContent = ''; feedbackEl.className = 'feedback'; }, 900);
+      }
+    }
+
+    document.querySelectorAll('.key').forEach(k => {
+      k.addEventListener('click', () => handleKeyPress(k.dataset.key));
+      k.style.webkitTapHighlightColor = 'transparent';
+    });
+    document.addEventListener('keydown', e => {
+      if (inputMode !== 'keyboard') return;
+      if (e.key >= '0' && e.key <= '9') handleKeyPress(e.key);
+      else if (e.key === 'Backspace')   handleKeyPress('delete');
+      else if (e.key === 'Enter')       handleKeyPress('ok');
+    });
+
+    // ===== SETTINGS MODAL =====
+    const settingsModal = document.getElementById('settingsModal');
+    const settingsBtn   = document.getElementById('settingsBtn');
+    const settingsClose = document.getElementById('settingsClose');
+    const settingsPlay  = document.getElementById('settingsPlay');
+    const soundToggleEl = document.getElementById('soundToggle');
+    soundToggleEl.classList.toggle('active', soundEnabled);
+
+    // Przywróć stan przycisków z zapisanych ustawień
+    document.querySelectorAll('[data-mode]').forEach(b  => b.classList.toggle('active',  b.dataset.mode  === mode));
+    document.querySelectorAll('[data-input]').forEach(b => b.classList.toggle('active', b.dataset.input === inputMode));
+    document.querySelectorAll('[data-diff]').forEach(b => {
+      const isActive = b.dataset.diff === difficulty;
+      b.classList.toggle('active', isActive);
+      if (isActive) b.classList.add(difficulty === 'easy' ? 'diff-easy' : 'diff-hard');
+    });
+
+    function openSettings()  { settingsModal.classList.add('active'); }
+    function closeSettings() { settingsModal.classList.remove('active'); }
+    settingsBtn.addEventListener('click', openSettings);
+    settingsClose.addEventListener('click', closeSettings);
+    settingsModal.addEventListener('click', e => { if (e.target === settingsModal) closeSettings(); });
+
+    document.getElementById('soundToggleRow').addEventListener('click', () => {
+      soundEnabled = !soundEnabled;
+      localStorage.setItem('zegar_soundEnabled', soundEnabled);
+      soundToggleEl.classList.toggle('active', soundEnabled);
+      if (soundEnabled) { initAudioContext(); playBeep(660, 100); }
+    });
+
+    settingsPlay.addEventListener('click', () => {
+      closeSettings(); saveSettings();
+      sectionChoice.classList.toggle('active',   inputMode === 'choice');
+      sectionKeyboard.classList.toggle('active', inputMode === 'keyboard');
+      sectionTap.classList.toggle('active',      inputMode === 'tap');
+      startGame();
+    });
+
+    document.querySelectorAll('[data-mode]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        mode = btn.dataset.mode;
+        document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('active', b === btn));
+        updateSettingsDisplay();
+      });
+    });
+    document.querySelectorAll('[data-input]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        inputMode = btn.dataset.input;
+        document.querySelectorAll('[data-input]').forEach(b => b.classList.toggle('active', b === btn));
+        updateSettingsDisplay();
+      });
+    });
+    document.querySelectorAll('[data-diff]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        difficulty = btn.dataset.diff;
+        document.querySelectorAll('[data-diff]').forEach(b => {
+          b.classList.remove('active','diff-easy','diff-hard');
+          if (b === btn) { b.classList.add('active', difficulty === 'easy' ? 'diff-easy' : 'diff-hard'); }
+        });
+        updateSettingsDisplay();
+      });
+    });
+
+    function updateSettingsDisplay() {
+      const ml = { arabic:'123', minutes:':05…', '24h':'13–24' };
+      const il = { choice:'Wybór', keyboard:'Klawiatura', tap:'Zaznacz' };
+      const dl = { easy:'Łatwy', hard:'Trudny' };
+      settingsDisplay.textContent = `${ml[mode]} · ${il[inputMode]} · ${dl[difficulty]}`;
+    }
+
+    restartBtn.addEventListener('click', startGame);
+
+    let _hintOpen = false, _hintTimer = null;
+    function toggleHint() { _hintOpen ? closeHint() : openHint(); }
+    function openHint() {
+      _hintOpen = true;
+      const fab = document.getElementById('fabHint'), toast = document.getElementById('hintToast'), bar = document.getElementById('hintBar');
+      fab.classList.add('active'); toast.classList.remove('auto-close'); toast.classList.add('visible');
+      bar.style.transition = 'none'; bar.style.transform = 'scaleX(0)'; void bar.offsetWidth;
+      toast.classList.add('auto-close'); clearTimeout(_hintTimer); _hintTimer = setTimeout(closeHint, 10000);
+    }
+    function closeHint() {
+      _hintOpen = false; clearTimeout(_hintTimer);
+      document.getElementById('fabHint').classList.remove('active');
+      document.getElementById('hintToast').classList.remove('visible','auto-close');
+    }
+
+    // ===== INIT =====
+    updateSettingsDisplay();
+    sectionChoice.classList.toggle('active',   inputMode === 'choice');
+    sectionKeyboard.classList.toggle('active', inputMode === 'keyboard');
+    sectionTap.classList.toggle('active',      inputMode === 'tap');
+    startGame();
+  </script>
+  <script src="transitions.js"></script>
+</body>
+</html>

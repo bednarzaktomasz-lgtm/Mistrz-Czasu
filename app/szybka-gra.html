@@ -134,6 +134,20 @@
       <span class="reward-note">+5 ⏳ za rundę</span>
     </a>
 
+    <a href="digit-placer-roman.html" class="nav-btn" id="dpRomanBtn"
+       data-hint="Uzupełnij zegar cyframi rzymskimi (I–XII). Trzy tryby wejścia: wybór, klawiatura I/V/X lub kliknięcie tarczy. Do 20 poprawnych dziennie daje +5 Sekund każda.">
+      <span class="icon">🏺</span>
+      Zegar Rzymski
+      <span class="reward-note" id="dpRomanNote">+5 ⏳ za poprawną</span>
+    </a>
+
+    <a href="digit-placer-arabic.html" class="nav-btn" id="dpArabicBtn"
+       data-hint="Uzupełnij zegar cyframi arabskimi, minutami (:05…) lub godziną w formacie 24h. Do 20 poprawnych dziennie daje +5 Sekund każda.">
+      <span class="icon">🔢</span>
+      Uzupełnij Zegar
+      <span class="reward-note" id="dpArabicNote">+5 ⏳ za poprawną</span>
+    </a>
+
   </div>
 
   <script src="game-state.js"></script>
@@ -152,6 +166,39 @@
           if (lock) lock.remove();
         }
       }
+    })();
+
+    // Ostatni preset digit-placer-roman
+    (function loadDpRomanPreset() {
+      const raw = localStorage.getItem('zegar_digitPlacer_roman');
+      if (!raw) return;
+      try {
+        const s = JSON.parse(raw);
+        const il = { choice:'Wybór', keyboard:'Klawiatura', tap:'Zaznacz' };
+        const dl = { easy:'Łatwy', hard:'Trudny' };
+        const label = [il[s.inputMode], dl[s.difficulty]].filter(Boolean).join(' · ');
+        if (label) {
+          const note = document.getElementById('dpRomanNote');
+          if (note) note.textContent = label;
+        }
+      } catch(e) {}
+    })();
+
+    // Ostatni preset digit-placer-arabic
+    (function loadDpArabicPreset() {
+      const raw = localStorage.getItem('zegar_digitPlacer_arabic');
+      if (!raw) return;
+      try {
+        const s = JSON.parse(raw);
+        const ml = { arabic:'123', minutes:':05…', '24h':'13–24' };
+        const il = { choice:'Wybór', keyboard:'Klawiatura', tap:'Zaznacz' };
+        const dl = { easy:'Łatwy', hard:'Trudny' };
+        const label = [ml[s.mode], il[s.inputMode], dl[s.difficulty]].filter(Boolean).join(' · ');
+        if (label) {
+          const note = document.getElementById('dpArabicNote');
+          if (note) note.textContent = label;
+        }
+      } catch(e) {}
     })();
 
     const helpBtn     = document.getElementById('helpBtn');
