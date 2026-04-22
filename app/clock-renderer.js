@@ -11,9 +11,12 @@
 class ClockRenderer {
   // Hand color palette
   static HAND_COLORS = {
-    white: '#f0f0f0',
-    blue: '#2563eb',
-    red: '#d82928',
+    white:  '#f0f0f0',
+    blue:   '#2563eb',
+    red:    '#d82928',
+    orange: '#ff6b1a',
+    pink:   '#ff4da6',
+    lime:   '#aaff00',
   };
 
   constructor(container, options = {}) {

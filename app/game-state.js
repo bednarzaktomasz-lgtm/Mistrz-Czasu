@@ -465,8 +465,8 @@ function isRusty() {
 // ─── Garderoba — sklep z kosmetykami ─────────────────────────────────────────
 
 const SHOP_ITEMS = {
-  bgs:    { solid: 0,   spiral: 500, grid: 1000, tech: 2000 },
-  colors: { white: 0,   blue: 300,   red: 800 },
+  bgs:    { solid: 0,   spiral: 500,  grid: 1000,  tech: 2000 },
+  colors: { white: 0,   blue: 300,    red: 800,    orange: 500, pink: 500, lime: 500 },
 };
 
 /**

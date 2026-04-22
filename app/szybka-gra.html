@@ -102,9 +102,29 @@
       <span class="reward-note">+5 ⏳ za poprawną</span>
     </a>
 
+    <a href="roman-pairs-bonus.html" class="nav-btn" id="romanBonusBtn" style="display:none"
+       data-hint="BONUS: cyfry rzymskie wykraczające poza zegar — L, C, D, M i liczby złożone. 14 poziomów. Odblokowane po ukończeniu podstaw.">
+      <span class="icon">🏺</span>
+      Wielkie Liczby
+      <span class="reward-note">+5 ⏳ za poprawną</span>
+    </a>
+
   </div>
 
+  <script src="game-state.js"></script>
   <script>
+    // Odkryj bonus po ukończeniu wszystkich 10 poziomów roman-pairs
+    (function checkRomanBonus() {
+      const profile = (typeof getActiveProfile === 'function') ? getActiveProfile() : null;
+      const key = profile
+        ? `mistrzCzasu_romanLevel_${profile.id}`
+        : 'mistrzCzasu_romanLevel_guest';
+      if (parseInt(localStorage.getItem(key) || '0', 10) >= 9) {
+        const btn = document.getElementById('romanBonusBtn');
+        if (btn) btn.style.display = '';
+      }
+    })();
+
     const helpBtn     = document.getElementById('helpBtn');
     const hintArea    = document.getElementById('hintArea');
     const defaultHint = 'Wybierz tryb i ćwicz dowolnie';
